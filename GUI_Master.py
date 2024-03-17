@@ -1,6 +1,7 @@
 from tkinter import *
 from tkinter import messagebox
 from tkinter import ttk
+import threading
 
 class RootGUI:
     def __init__(self):
@@ -11,10 +12,11 @@ class RootGUI:
         self.root.iconbitmap("Assets/icon.ico")
 
 class ComGUI():
-    def __init__(self, root, serial):
+    def __init__(self, root, serial, data):
 
         self.root = root
         self.serial = serial
+        self.data = data
 
         self.frame = LabelFrame(root, text="Comms Manager", padx=5, pady=5, bg="grey")
         self.label_com = Label(self.frame, text="Available port(s): ", bg="grey", width=15, anchor="w")
@@ -71,13 +73,22 @@ class ComGUI():
                 self.drop_com["state"] = "disable"
                 InfoMsg = f"Connection success! "
                 messagebox.showinfo("showinfo", InfoMsg)
-                self.conn = ConnGUI(self.root, self.serial)
+                
+                #Start Comms
+                self.conn = ConnGUI(self.root, self.serial, self.data)
+                self.serial.t1 = threading.Thread(
+                    target = self.serial.SerialSync, args = (self,), daemon=True
+                )
+                self.serial.t1.start()
+
             else:
                 ErrorMsg = f"FATAL Error trying to connect in the last step! "
                 messagebox.showerror("showerror", ErrorMsg)
         else:
-            self.conn.ConnGUIClose()
+            self.serial.threading = False
             self.serial.SerialClose()
+            self.conn.ConnGUIClose()
+            
             InfoMsg = f"Connection is now closed! "
             messagebox.showwarning("Warning!", InfoMsg)
             self.btn_connect["text"] = "Connect"
@@ -95,9 +106,11 @@ class ComGUI():
         self.connect_ctrl(logic)
 
 class ConnGUI():
-    def __init__(self, root, serial):
+    def __init__(self, root, serial, data):
         self.root = root
         self.serial = serial
+        self.data = data
+
         self.frame = LabelFrame(root, text="Connection manager", padx=5, pady=5, bg='grey', width=60)
 
         self.sync_label = Label(self.frame, text="Sync status: ", bg="gray", width=15, anchor="w")
