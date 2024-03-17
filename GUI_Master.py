@@ -1,5 +1,6 @@
 from tkinter import *
 from tkinter import messagebox
+from tkinter import ttk
 
 class RootGUI:
     def __init__(self):
@@ -70,10 +71,12 @@ class ComGUI():
                 self.drop_com["state"] = "disable"
                 InfoMsg = f"Connection success! "
                 messagebox.showinfo("showinfo", InfoMsg)
+                self.conn = ConnGUI(self.root, self.serial)
             else:
                 ErrorMsg = f"FATAL Error trying to connect in the last step! "
                 messagebox.showerror("showerror", ErrorMsg)
         else:
+            self.conn.ConnGUIClose()
             self.serial.SerialClose()
             InfoMsg = f"Connection is now closed! "
             messagebox.showwarning("Warning!", InfoMsg)
@@ -91,6 +94,74 @@ class ComGUI():
         logic = []
         self.connect_ctrl(logic)
 
+class ConnGUI():
+    def __init__(self, root, serial):
+        self.root = root
+        self.serial = serial
+        self.frame = LabelFrame(root, text="Connection manager", padx=5, pady=5, bg='grey', width=60)
+
+        self.sync_label = Label(self.frame, text="Sync status: ", bg="gray", width=15, anchor="w")
+        self.sync_status = Label(self.frame, text="..Sync..", bg="gray", fg="orange", width=5)
+
+        self.ch_label = Label(self.frame, text="Active Channels: ", bg="gray", width=15, anchor="w")
+        self.ch_status = Label(self.frame, text="...", bg="gray", fg="orange", width=5)
+
+        self.btn_start_stream = Button(self.frame, text="Launch", state=DISABLED, width=5, command=self.start_stream)
+        self.btn_stop_stream = Button(self.frame, text="Stop", state=DISABLED, width=5, command=self.stop_stream)
+
+        #Create add/remove chart button objects not needed I think(O gal pridesiu veliau)
+
+        self.save = False
+        self.SaveVar = IntVar()
+        self.save_check = Checkbutton(self.frame, text="Save data", variable=self.SaveVar, onvalue=1, offvalue=0, bg="grey", state="disabled", command=self.save_data)
+
+        self.separator = ttk.Separator(self.frame, orient = 'vertical')
+
+        self.pady = 11
+        self.padx = 20
+
+        self.ConnGUIOpen()
+    def ConnGUIOpen(self):
+        self.root.geometry('800x120')
+        self.frame.grid(row=0,column=4, rowspan=3, columnspan=5, padx=5, pady=5)
+        self.sync_label.grid(column=1, row=1)
+        self.sync_status.grid(column=2, row=1)
+
+        self.ch_label.grid(column=1, row=2)
+        self.ch_status.grid(column=2, row=2, pady=self.pady)
+
+        self.btn_start_stream.grid(column=3, row=1, padx=self.padx)
+        self.btn_stop_stream.grid(column=3, row=2, padx=self.padx)
+        
+        #Button for adding/removing charts addition to grid not needed for now
+
+        self.save_check.grid(column=4, row=2, columnspan=2)
+
+        self.separator.place(relx=0.5,rely=0,relwidth=0.001, relheight=1)
+    
+    def ConnGUIClose(self):
+        for widget in self.frame.winfo_children():
+            widget.destroy()
+        self.frame.destroy()
+        self.root.geometry("360x120")
+    
+    def start_stream(self):
+        pass
+
+
+    def stop_stream(self):
+        pass
+
+
+    def save_data(self):
+        pass
+
+
+
+        
+        
+
 if __name__ == "__name__":
     RootGUI()
     ComGUI()
+    ConnGUI()
