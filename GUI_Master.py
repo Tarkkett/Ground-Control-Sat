@@ -1,6 +1,7 @@
 from tkinter import *
 from tkinter import messagebox
 from tkinter import ttk
+import tkinter.font as TkFont
 import threading
 
 class RootGUI:
@@ -17,6 +18,7 @@ class ComGUI():
         self.root = root
         self.serial = serial
         self.data = data
+        self.mainFont = TkFont.Font(family="Calibri",size=10,weight="bold")
 
         self.frame = LabelFrame(root, text="Comms Manager", padx=5, pady=5, bg="grey")
         self.label_com = Label(self.frame, text="Available port(s): ", bg="grey", width=15, anchor="w")
@@ -75,7 +77,7 @@ class ComGUI():
                 messagebox.showinfo("showinfo", InfoMsg)
                 
                 #Start Comms
-                self.conn = ConnGUI(self.root, self.serial, self.data)
+                self.conn = ConnGUI(self.root, self.serial, self.data, self.mainFont)
                 self.serial.t1 = threading.Thread(
                     target = self.serial.SerialSync, args = (self,), daemon=True
                 )
@@ -106,10 +108,11 @@ class ComGUI():
         self.connect_ctrl(logic)
 
 class ConnGUI():
-    def __init__(self, root, serial, data):
+    def __init__(self, root, serial, data, mainFont):
         self.root = root
         self.serial = serial
         self.data = data
+        self.mainFont = mainFont
 
         self.frame = LabelFrame(root, text="Connection manager", padx=5, pady=5, bg='grey', width=60)
 
@@ -123,6 +126,8 @@ class ConnGUI():
         self.btn_stop_stream = Button(self.frame, text="Stop", state=DISABLED, width=5, command=self.stop_stream)
 
         #Create add/remove chart button objects not needed I think(O gal pridesiu veliau)
+        self.btn_add_chart = Button(self.frame, text="+", font=self.mainFont, state="disabled", width=5, bg="grey", fg="orange", command=self.new_chart)
+        self.btn_remove_chart = Button(self.frame, text="-", font=self.mainFont , state="disabled", width=5, bg="grey", fg="orange", command=self.remove_chart)
 
         self.save = False
         self.SaveVar = IntVar()
@@ -147,10 +152,12 @@ class ConnGUI():
         self.btn_stop_stream.grid(column=3, row=2, padx=self.padx)
         
         #Button for adding/removing charts addition to grid not needed for now
+        self.btn_add_chart.grid(column=4, row=1, padx=self.padx)
+        self.btn_remove_chart.grid(column=5, row=1, padx=self.padx)
 
         self.save_check.grid(column=4, row=2, columnspan=2)
 
-        self.separator.place(relx=0.5,rely=0,relwidth=0.001, relheight=1)
+        self.separator.place(relx=0.6,rely=0,relwidth=0.001, relheight=1)
     
     def ConnGUIClose(self):
         for widget in self.frame.winfo_children():
@@ -167,6 +174,12 @@ class ConnGUI():
 
 
     def save_data(self):
+        pass
+
+    def new_chart(self):
+        pass
+
+    def remove_chart(self):
         pass
 
 

@@ -5,10 +5,23 @@ class DataMaster():
         self.StartStream = "#A#\n"
         self.StopStream = "#S#\n"
         self.SyncChannel = 0
+        self.msg = []
+
+        self.XData = []
+        self.YData = []
+
     def DecodeMsg(self):
         temp = self.RowMsg.decode('utf-8')
         if len(temp) > 0:
             if "#" in temp:
                 self.msg = temp.split("#")
-                print(self.msg)
+                #print(f"Before removing index: {self.msg}")
                 del self.msg[0]
+                #print(f"After removing index: {self.msg}")
+
+    def GenChannels(self):
+        self.Channels = [f"Ch{ch}" for ch in range(self.SyncChannel)]
+    
+    def BuildYData(self):
+        for _ in range(self.SyncChannel):
+            self.Ydata.append([])

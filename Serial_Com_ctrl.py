@@ -53,7 +53,27 @@ class SerialCtrl():
                 gui.conn.sync_status["text"] = "..Sync.."
                 gui.conn.sync_status["fg"] = "orange"
                 gui.data.RowMsg = self.ser.readline()
-                print(gui.data.RowMsg)
+                #print(f"RowMsg: {gui.data.RowMsg}")
+                gui.data.DecodeMsg()
+
+                if gui.data.sync_ok in gui.data.msg[0]:
+                    if int(gui.data.msg[1]) > 0:
+                        gui.conn.btn_start_stream["state"] = "active"
+                        gui.conn.btn_add_chart["state"] = "active"
+                        gui.conn.btn_remove_chart["state"] = "active"
+                        gui.conn.save_check["state"] = "active"
+                        gui.conn.sync_status["text"] = "OK"
+                        gui.conn.sync_status["fg"] = "green"
+                        gui.conn.ch_status["text"] = gui.data.msg[1]
+                        gui.conn.ch_status["fg"] = "green"
+                        gui.data.SyncChannel = int(gui.data.msg[1])
+                        gui.data.GenChannels()
+                        gui.data.BuildYData()
+                        print(gui.data.Channels, gui.data.Ydata)
+
+                        self.threading = False
+                        break
+
                 if self.threading == False:
                     break
             except Exception as e:
