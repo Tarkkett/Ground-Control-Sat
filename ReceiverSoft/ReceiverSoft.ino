@@ -1,5 +1,5 @@
 void setup() {
-  Serial.begin(9600); // Initialize serial communication
+  Serial.begin(115200); // Initialize serial communication
 }
 
 void loop() {
@@ -19,6 +19,6 @@ void loop() {
   // Check if "?" character is found
   if (questionMarkIndex != -1) {
     // Send "Hello world" back to Serial
-    Serial.println("#!#1#100#\n");
+    Serial.println("#!#2#100#50#\n");
   }
 }

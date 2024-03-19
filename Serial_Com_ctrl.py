@@ -69,7 +69,7 @@ class SerialCtrl():
                         gui.data.SyncChannel = int(gui.data.msg[1])
                         gui.data.GenChannels()
                         gui.data.BuildYData()
-                        print(gui.data.Channels, gui.data.Ydata)
+                        print(gui.data.Channels, gui.data.YData)
 
                         self.threading = False
                         break

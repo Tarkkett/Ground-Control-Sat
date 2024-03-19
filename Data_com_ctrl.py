@@ -24,7 +24,7 @@ class DataMaster():
     
     def BuildYData(self):
         for _ in range(self.SyncChannel):
-            self.Ydata.append([])
+            self.YData.append([])
 
 if __name__ == "__main__":
     DataMaster()
