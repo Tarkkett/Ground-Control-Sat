@@ -15,9 +15,9 @@ class DataMaster():
         if len(temp) > 0:
             if "#" in temp:
                 self.msg = temp.split("#")
-                #print(f"Before removing index: {self.msg}")
+                print(f"Before removing index: {self.msg}")
                 del self.msg[0]
-                #print(f"After removing index: {self.msg}")
+                print(f"After removing index: {self.msg}")
 
     def GenChannels(self):
         self.Channels = [f"Ch{ch}" for ch in range(self.SyncChannel)]
@@ -25,3 +25,6 @@ class DataMaster():
     def BuildYData(self):
         for _ in range(self.SyncChannel):
             self.Ydata.append([])
+
+if __name__ == "__main__":
+    DataMaster()
