@@ -3,14 +3,27 @@ from tkinter import messagebox
 from tkinter import ttk
 import tkinter.font as TkFont
 import threading
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 class RootGUI:
-    def __init__(self):
+    def __init__(self, serial, data):
         self.root = Tk()
         self.root.title("MagnifiCanSatGround Station Comms!")
         self.root.geometry("360x120")
         self.root.config(bg="grey")
         self.root.iconbitmap("Assets/icon.ico")
+
+        self.serial = serial
+        self.data = data
+
+        self.root.protocol("WM_DELETE_WINDOW", self.close_window)
+
+    def close_window(self):
+        print("Closing the main window now!")
+        self.root.destroy()
+        self.serial.SerialClose(self)
+        self.serial.threading = False
 
 class ComGUI():
     def __init__(self, root, serial, data):
@@ -90,6 +103,7 @@ class ComGUI():
             self.serial.threading = False
             self.serial.SerialClose()
             self.conn.ConnGUIClose()
+            self.data.ClearData()
             
             InfoMsg = f"Connection is now closed! "
             messagebox.showwarning("Warning!", InfoMsg)
@@ -139,6 +153,8 @@ class ConnGUI():
         self.padx = 20
 
         self.ConnGUIOpen()
+        self.chartMaster = DisGUI(self.root, self.serial, self.data)
+
     def ConnGUIOpen(self):
         self.root.geometry('800x120')
         self.frame.grid(row=0,column=4, rowspan=3, columnspan=5, padx=5, pady=5)
@@ -177,17 +193,103 @@ class ConnGUI():
         pass
 
     def new_chart(self):
-        pass
+        self.chartMaster.AddChannelMaster()
 
     def remove_chart(self):
-        pass
+        try:
 
+            if len(self.chartMaster.frames) > 0:
+                totalFrame = len(self.chartMaster.frames)-1
+                self.chartMaster.frames[totalFrame].destroy()
+                self.chartMaster.frames.pop()
+                self.chartMaster.figs.pop()
+                self.chartMaster.ControlFrames.pop()
+                self.chartMaster.AdjustRootFrame()
+        except:
+            pass
 
+class DisGUI():
+    def __init__(self, root, serial, data):
+        self.root = root
+        self.serial = serial
+        self.data = data
 
+        self.frames = []
+        self.framesCol = 0
+        self.framesRow = 4
+        self.totalFrames = 0
+
+        self.figs = []
+        self.ControlFrames = []
+
+    def AddChannelMaster(self):
+        self.AddMasterFrame()
+        self.AdjustRootFrame()
+        self.AddGraph()
+        self.AddBtnFrame()
+
+    def AddMasterFrame(self):
+        self.frames.append(LabelFrame(self.root, text=f"Display Manager - {len(self.frames) + 1}", padx=5, pady=5, bg="grey"))
+        self.totalFrames = len(self.frames) - 1
+        print(len(self.frames)) # 1
+        print(self.totalFrames) # 0
+
+        if self.totalFrames % 2 ==0:
+            self.framesCol = 0
+        else:
+            self.framesCol = 9
+
+        self.framesRow = 4 + 4 * int(self.totalFrames/2)
+        print("Col" + str(self.framesCol))
+        print("Row" + str(self.framesRow))
+        self.frames[self.totalFrames].grid(padx = 5, column = self.framesCol, row = self.framesRow, columnspan = 9, sticky="NW")
+
+    def AdjustRootFrame(self):
+        self.totalFrames = len(self.frames) - 1
+        if self.totalFrames > 0:
+            RootW = 800*2
+        else:
+            RootW = 800
+        if self.totalFrames + 1 == 0:
+            RootH = 120
+        else:
+            RootH = 120 + 430* (int(self.totalFrames/2) + 1)
+        self.root.geometry(f"{RootW}x{RootH}")
+
+    def AddGraph(self):
+        self.figs.append([])
+        self.figs[self.totalFrames].append(plt.figure(figsize=(7,5), dpi=80))
+
+        self.figs[self.totalFrames].append(self.figs[self.totalFrames][0].add_subplot(111).set_title(f'{len(self.frames)}'))
+
+        self.figs[self.totalFrames].append(FigureCanvasTkAgg(self.figs[self.totalFrames][0], master = self.frames[self.totalFrames]))
+        self.figs[self.totalFrames][2].get_tk_widget().grid(column = 1, row = 0, columnspan = 17, sticky="N")
         
-        
+    def AddBtnFrame(self):
+        '''
+        Method to add the bottons to be used to add further channels 
+        the button need to use a partial lib when calling the libary so it can keep the right 
+        Widget target --> Further details in the YouTube WeeW-Stack
+        '''
+        btnH = 2
+        btnW = 4
+        self.ControlFrames.append([])
+        self.ControlFrames[self.totalFrames].append(LabelFrame(self.frames[self.totalFrames],
+                                                               pady=5, bg="white"))
+        self.ControlFrames[self.totalFrames][0].grid(
+            column=0, row=0, padx=5, pady=5,  sticky=N)
+
+        self.ControlFrames[self.totalFrames].append(Button(self.ControlFrames[self.totalFrames][0], text="+",
+                                                           bg="white", width=btnW, height=btnH))
+        self.ControlFrames[self.totalFrames][1].grid(
+            column=0, row=0, padx=5, pady=5)
+        self.ControlFrames[self.totalFrames].append(Button(self.ControlFrames[self.totalFrames][0], text="-",
+                                                           bg="white", width=btnW, height=btnH))
+        self.ControlFrames[self.totalFrames][2].grid(
+            column=1, row=0, padx=5, pady=5)
 
 if __name__ == "__name__":
     RootGUI()
     ComGUI()
     ConnGUI()
+    DisGUI()

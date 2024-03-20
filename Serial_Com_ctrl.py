@@ -23,6 +23,7 @@ class SerialCtrl():
             self.ser.timeout = 0.1
         try:
             if self.ser.is_open:
+                print("COM Already Open")
                 self.ser.status = True
             else:
                 PORT = gui.clicked_com.get()
@@ -36,7 +37,7 @@ class SerialCtrl():
         except:
             self.ser.status = False
 
-    def SerialClose(self):
+    def SerialClose(self, gui):
         try:
             self.ser.is_open
             self.ser.close()

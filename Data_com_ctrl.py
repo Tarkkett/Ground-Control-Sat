@@ -26,5 +26,10 @@ class DataMaster():
         for _ in range(self.SyncChannel):
             self.YData.append([])
 
+    def ClearData(self):
+        self.RowMsg=""
+        self.msg = []
+        self.YData = []
+
 if __name__ == "__main__":
     DataMaster()
