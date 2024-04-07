@@ -11,34 +11,45 @@ int communicating = 0;
 
 
 struct DATA_REC {
-  int Count;
-
+  float Lat_GPS;
+  float Lon_GPS;
+  int Altitude_GPS;
+  int Satelite_Count_GPS;
+  int Seconds_GPS;
+  float Status_GPS;
 };
-struct DATA_SEND {
-  int Cooldown;
 
-};
+
 
 int Chan;
 DATA_REC MyData_receive;
-DATA_SEND MyData_send;
+//DATA_SEND MyData_send;
 unsigned long Last;
+
 
 SoftwareSerial ESerial(PIN_RX, PIN_TX);
 EBYTE Transceiver(&ESerial, PIN_M0, PIN_M1, PIN_AX);
 
+size_t numElements = sizeof(MyData_receive) /sizeof(int);
+
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
   ESerial.begin(9600);
+
+  MyData_receive.Altitude_GPS = 0;
+  MyData_receive.Satelite_Count_GPS = 0;
+  MyData_receive.Seconds_GPS = 0;
+  MyData_receive.Status_GPS = 0.0;
+
   Serial.println("Starting Reader");
   Transceiver.init();
 
   Transceiver.PrintParameters();
 }
 
-int cooldown = 9999;
 
 void loop() {
+  
   // String receivedData = ""; // Variable to store received data
 
   // // Read data from serial until "#?#\n" is received
@@ -57,12 +68,17 @@ void loop() {
   //   // Send "Hello world" back to Serial
   //   Serial.println("#!#2#100#50#\n");
   // }
+
+  
   if (ESerial.available()) {
 
     Transceiver.GetStruct(&MyData_receive, sizeof(MyData_receive));
+    
 
+  
     // dump out what was just received
-    Serial.print("Count: "); Serial.println(int(MyData_receive.Count));
+
+    Serial.print("#M#"); Serial.print(MyData_receive.Lat_GPS); Serial.print("#"); Serial.print(String(MyData_receive.Satelite_Count_GPS) + "#"); Serial.print(String(MyData_receive.Seconds_GPS) + "#"); Serial.println(String(MyData_receive.Status_GPS) + "#");
     // Serial.print("Bits: "); Serial.println(MyData.Bits);
     // Serial.print("Volts: "); Serial.println(MyData.Volts);
     // if you got data, update the checker
@@ -81,17 +97,18 @@ void loop() {
     }
 
   }
-  ESerial.stopListening();
-  delay(300);
-  // if (ESerial.availableForWrite()) {
+  delay(100);
+  // ESerial.stopListening();
+  // delay(300);
+  // // if (ESerial.availableForWrite()) {
 
-  cooldown -=1;
-  MyData_send.Cooldown = cooldown;
-  Transceiver.SendStruct(&MyData_send, sizeof(MyData_send));
-  Serial.print("Sent: "); Serial.println(MyData_send.Cooldown);
+  // cooldown -=1;
+  // MyData_send.Cooldown = cooldown;
+  // Transceiver.SendStruct(&MyData_send, sizeof(MyData_send));
+  // Serial.print("Sent: "); Serial.println(MyData_send.Cooldown);
     
-  //}
-  ESerial.listen();
-  delay(300);
+  // //}
+  // ESerial.listen();
+  // delay(300);
 
 }
