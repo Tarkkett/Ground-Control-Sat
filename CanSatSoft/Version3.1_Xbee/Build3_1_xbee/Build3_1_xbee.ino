@@ -2,15 +2,18 @@
 #include <ESP32Servo.h>
 #include <Wire.h>
 #include <SPI.h>
-#include <Adafruit_BMP280.h>
 #include <HardwareSerial.h>
-#include <EBYTE.h>
 #include <Adafruit_BNO08x.h>
 #include <TinyGPSPlus.h>
 #include <cmath>
+#include <Adafruit_BME280.h>
 
 
 //=BME280=Temp=Pressure=Humidity
+Adafruit_BME280 bme; // use I2C interface
+Adafruit_Sensor *bme_temp = bme.getTemperatureSensor();
+Adafruit_Sensor *bme_pressure = bme.getPressureSensor();
+Adafruit_Sensor *bme_humidity = bme.getHumiditySensor();
 
 //=XBEE3=radio=
 #define Xbee_Baud 57600
@@ -112,7 +115,7 @@ void setup() {
     InitIMU();
     InitGPS();
     InitServos();
-    //InitBME();
+    InitBME();
     // delay(3000);
     
 }
@@ -175,8 +178,15 @@ void InitRadio(){
 }*/
 
 void InitBME(){
-  
+  if (!bme.begin()) {
+    Serial.println(F("Could not find a valid BME280 sensor, check wiring!"));
+    while (1) delay(10);
+  }
 
+  bme_temp->printSensorDetails();
+  bme_pressure->printSensorDetails();
+  bme_humidity->printSensorDetails();
+  Serial.println("BMR sensors init() success!");
 }
 
 float GetBearing(float lat1, float lon1, float lat2, float lon2){
@@ -190,6 +200,12 @@ float GetBearing(float lat1, float lon1, float lat2, float lon2){
     bearing = atan2(delta_lon, delta_lat);
     //bearing = theta * 57296 / 1000;
     return bearing;
+}
+
+void GetBMEData(sensors_event_t *temp_event, sensors_event_t *pressure_event, sensors_event_t *humidity_event){
+  bme_temp->getEvent(temp_event);
+  bme_pressure->getEvent(pressure_event);
+  bme_humidity->getEvent(humidity_event);
 }
 
 void quaternionToEuler(float qr, float qi, float qj, float qk, euler_t* ypr, bool degrees = false) {
@@ -321,14 +337,17 @@ void loop() {
     //Serial.println("INVALID!");
   }
 
+  sensors_event_t temp_event, pressure_event, humidity_event;
   FeedbackData.yaw = GetYaw();
-  Serial.print("X: "); Serial.println(sin(GetBearing(targetLat, targetLon, FeedbackData.latitude, FeedbackData.longtitude) + radians(GetYaw())));
-  Serial.print("Y: "); Serial.println(cos(GetBearing(targetLat, targetLon, FeedbackData.latitude, FeedbackData.longtitude) + radians(GetYaw())));
+  GetBMEData(&temp_event, &pressure_event, &humidity_event);
+  //Serial.print("X: "); Serial.println(sin(GetBearing(targetLat, targetLon, FeedbackData.latitude, FeedbackData.longtitude) + radians(GetYaw())));
+  //Serial.print("Y: "); Serial.println(cos(GetBearing(targetLat, targetLon, FeedbackData.latitude, FeedbackData.longtitude) + radians(GetYaw())));
 
-  servoX.write(MapToFloat(sin(radians(-90) + radians(GetYaw())), 1, -1, 0, 180));
-  servoY.write(MapToFloat(cos(radians(-90)  + radians(GetYaw())), 1, -1, 0, 180)); 
+  //servoX.write(MapToFloat(sin(radians(-90) + radians(GetYaw())), 1, -1, 0, 180));
+  //servoY.write(MapToFloat(cos(radians(-90)  + radians(GetYaw())), 1, -1, 0, 180)); 
   //Serial.print(GetYaw());Serial.print("/");Serial.print(gps.location.lat());Serial.print("/");Serial.print(gps.location.lng());Serial.print("/");Serial.print(GetBearing(targetLat, targetLon, FeedbackData.latitude, FeedbackData.longtitude));Serial.print("/");Serial.println(gps.satellites.value());
-  Serial0.print(GetYaw());Serial0.print("/");Serial0.print(radians(GetYaw()));Serial0.print("/");Serial0.print(MapToFloat(sin(0 + radians(GetYaw())), -1, 1, 0, 180));Serial0.print("/");Serial0.print(MapToFloat(cos(0 + radians(-GetYaw())), -1, 1, 0, 180));Serial0.print("/");Serial0.println(gps.satellites.value());
+  Serial0.print(GetYaw());Serial0.print("/");Serial0.print(temp_event.temperature);Serial0.print("/");Serial0.print(pressure_event.pressure);Serial0.print("/");Serial0.print(humidity_event.relative_humidity);//Serial0.print("/");Serial0.print(MapToFloat(sin(0 + radians(GetYaw())), -1, 1, 0, 180));Serial0.print("/");Serial0.print(MapToFloat(cos(0 + radians(-GetYaw())), -1, 1, 0, 180));Serial0.print("/");Serial0.println(gps.satellites.value());
+  Serial0.print("/");Serial0.print(gps.location.lat(), 6);Serial0.print("/");Serial0.print(gps.location.lng(), 6);
   delay(100);
 
   //SetServos(GetYaw());
