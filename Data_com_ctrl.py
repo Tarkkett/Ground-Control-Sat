@@ -17,9 +17,16 @@ class DataMaster():
         if len(temp) > 0:
             if "#" in temp:
                 self.msg = temp.split("#")
-                print(f"Before removing index: {self.msg}")
+                #print(f"Before removing index: {self.msg}")
                 del self.msg[0]
-                print(f"After removing index: {self.msg}")
+                #print(f"After removing index: {self.msg}")
+                if self.msg[0] in "D":
+                    self.messageLength = 0
+                    self.messageLengthCheck = 0
+                    del self.msg[0]
+                    del self.msg[len(self.msg)-1]
+                    self.messageLength = int(self.msg[len(self.msg)-1])
+                    del self.msg[len(self.msg)-1]
 
     def GenChannels(self):
         self.Channels = [f"Ch{ch}" for ch in range(self.SyncChannel)]
