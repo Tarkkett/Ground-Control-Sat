@@ -9,12 +9,13 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from functools import partial
 
 class RootGUI:
-    def __init__(self, serial, data):
+    def __init__(self, serial, data, gamepad):
         self.root = Tk()
         self.root.title("MagnifiCanSatGround Station Comms!")
         self.root.geometry("360x120")
         self.root.config(bg="grey")
         self.root.iconbitmap("Assets/icon.ico")
+        self.gamepad = gamepad
 
         self.serial = serial
         self.data = data
@@ -26,13 +27,15 @@ class RootGUI:
         self.root.destroy()
         self.serial.SerialClose(self)
         self.serial.threading = False
+        self.gamepad.theading = False
 
 class ComGUI():
-    def __init__(self, root, serial, data):
+    def __init__(self, root, serial, data, gamepad):
 
         self.root = root
         self.serial = serial
         self.data = data
+        self.gamepad = gamepad
         self.mainFont = TkFont.Font(family="Calibri",size=10,weight="bold")
 
         self.frame = LabelFrame(root, text="Comms Manager", padx=5, pady=5, bg="grey")

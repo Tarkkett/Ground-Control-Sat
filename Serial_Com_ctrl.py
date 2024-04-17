@@ -92,7 +92,16 @@ class SerialCtrl():
                     break
                 time.sleep(0.5)
 
-
+    def SerialDataStream(self, gui):
+        self.threading = True
+        cnt=0
+        while self.threading:
+            try:
+                self.ser.write(gui.data.StartStream.encode())
+                gui.data.RowMsg = self.ser.readline()
+                gui.data.DecodeMsg()
+            except Exception as e:
+                print(e)
             
         
 if __name__ == "__main__":
