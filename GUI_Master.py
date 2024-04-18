@@ -1,8 +1,10 @@
 from tkinter import *
 from tkinter import messagebox
 from tkinter import ttk
+from tkinter.ttk import Progressbar, Style
 import tkinter.font as TkFont
 import threading
+from time import sleep
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
@@ -11,6 +13,7 @@ from functools import partial
 class RootGUI:
     def __init__(self, serial, data, gamepad):
         self.root = Tk()
+
         self.root.title("MagnifiCanSatGround Station Comms!")
         self.root.geometry("360x120")
         self.root.config(bg="grey")
@@ -94,8 +97,10 @@ class ComGUI():
                 InfoMsg = f"Connection success! "
                 messagebox.showinfo("showinfo", InfoMsg)
                 
-                #Start Comms
+                #Start Comms and controller
                 self.conn = ConnGUI(self.root, self.serial, self.data, self.mainFont)
+                self.controller = GamepadGUI(self.root, self.gamepad)
+
                 self.serial.t1 = threading.Thread(
                     target = self.serial.SerialSync, args = (self,), daemon=True
                 )
@@ -106,8 +111,10 @@ class ComGUI():
                 messagebox.showerror("showerror", ErrorMsg)
         else:
             self.serial.threading = False
+            self.controller.threading = False
             self.serial.SerialClose(self)
             self.conn.ConnGUIClose()
+            self.controller.GamepadGUIClose()
             self.data.ClearData()
             
             InfoMsg = f"Connection is now closed! "
@@ -125,6 +132,63 @@ class ComGUI():
         self.drop_com.grid(column=2, row=2)
         logic = []
         self.connect_ctrl(logic)
+
+class GamepadGUI():
+    def __init__(self, root, gamepad):
+        self.root = root
+        self.gamepad = gamepad
+        self.threading = True
+        monitorThread = threading.Thread(target=self.UpdateControllerData, args=(self.gamepad,), name="Gamepad Monitor", daemon=True)
+        monitorThread.start()
+
+        self.s = Style(self.root)
+
+        self.s.layout("LabeledProgressbar",
+            [('LabeledProgressbar.trough',
+            {'children': [('LabeledProgressbar.pbar',
+                            {'side': 'left', 'sticky': 'ns'}),
+                            ("LabeledProgressbar.label",
+                            {"sticky": ""})],
+            'sticky': 'nswe'})])
+
+        self.frame = LabelFrame(root, text="Controller data", padx=5, pady=5, bg="gray", width=60, height=60)
+        self.barLeftX = Progressbar(self.frame, length=100, style="LabeledProgressbar", orient="vertical", )
+        self.barLeftY = Progressbar(self.frame, length=100, style="LabeledProgressbar", orient="vertical")
+        self.barRightX = Progressbar(self.frame, length=100, style="LabeledProgressbar", orient="vertical")
+        self.barRightY = Progressbar(self.frame, length=100, style="LabeledProgressbar", orient="vertical")
+        
+
+        self.GamepadGUIOpen()
+
+    def UpdateControllerData(self, gamepad):
+        
+        while self.threading:
+            sleep(0.1)
+            #self.barX.step()
+            if self.threading:
+                self.barLeftX["value"] = int(gamepad.lockLX)
+                self.barLeftY["value"] = int(gamepad.lockLY)
+                self.barRightX["value"] = int(gamepad.lockRX)
+                self.barRightY["value"] = int(gamepad.lockRY)
+                self.s.configure("LabeledProgressbar", text="{0} %      ".format(int(gamepad.lockLX)))
+                self.s.configure("LabeledProgressbar", text="{0} %      ".format(int(gamepad.lockLY)))
+                self.s.configure("LabeledProgressbar", text="{0} %      ".format(int(gamepad.lockRX)))
+                self.s.configure("LabeledProgressbar", text="{0} %      ".format(int(gamepad.lockRY)))
+                self.root.update()
+
+    def GamepadGUIOpen(self):
+        self.frame.grid(row=0,column=9, rowspan=3, columnspan=5, padx=5, pady=5)
+        self.barLeftX.grid(column=1, row= 0, padx= 5, )
+        self.barLeftY.grid(column=2, row= 0, padx= 5)
+        self.barRightX.grid(column=3, row= 0, padx= 5)
+        self.barRightY.grid(column=4, row= 0, padx= 5)
+    
+    def GamepadGUIClose(self):
+        for widget in self.frame.winfo_children():
+            widget.destroy()
+        self.frame.destroy()
+        self.root.geometry("360x120")
+
 
 class ConnGUI():
     def __init__(self, root, serial, data, mainFont):
@@ -161,7 +225,7 @@ class ConnGUI():
         self.chartMaster = DisGUI(self.root, self.serial, self.data)
 
     def ConnGUIOpen(self):
-        self.root.geometry('800x120')
+        self.root.geometry('1200x160')
         self.frame.grid(row=0,column=4, rowspan=3, columnspan=5, padx=5, pady=5)
         self.sync_label.grid(column=1, row=1)
         self.sync_status.grid(column=2, row=1)

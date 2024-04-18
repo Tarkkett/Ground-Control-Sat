@@ -1,10 +1,9 @@
 import pygame
 import threading
-
-
-
+from time import sleep
 
 class GamepadCtrl:
+
 
     def __init__(self):
         pygame.init()
@@ -13,8 +12,8 @@ class GamepadCtrl:
         threading.Thread(target=self.run, daemon=True, name="GamepadThread").start()
 
     def run(self):
-        self.threading = True
         
+        self.threading = True
         while self.threading:
             try:
                 for event in pygame.event.get():
@@ -22,27 +21,34 @@ class GamepadCtrl:
                         self.threading = False
 
                     if event.type == pygame.JOYDEVICEADDED:
-                        # This event will be generated when the program starts for every
-                        # joystick, filling up the list without needing to create them manually.
+
                         joy = pygame.joystick.Joystick(event.device_index)
                         self.joysticks[joy.get_instance_id()] = joy
-                        print(f"Joystick {joy.get_instance_id()} connencted")
-                        print(joy.get_instance_id())
+                        if self.threading == True:
+                            print(f"Joystick {joy.get_instance_id()} connencted")
+                            print(joy.get_instance_id())
 
                     if event.type == pygame.JOYDEVICEREMOVED:
                         del self.joysticks[event.instance_id]
-                        print(f"Joystick {event.instance_id} disconnected")
+                        #print(f"Joystick {event.instance_id} disconnected")
 
                 # For each joystick:
                 for joystick in self.joysticks.values():
 
-                    axes = joystick.get_numaxes()
-
-                    for i in range(axes):
-                        axis = joystick.get_axis(i)
-                        print(f"Axis {i} value: {axis:>6.3f}")
+                    #axes = joystick.get_numaxes()
+                    if self.threading:
+                            
+                        self.lockLX = self.map_value(joystick.get_axis(0))
+                        self.lockLY = self.map_value(-joystick.get_axis(1))
+                        self.lockRX = self.map_value(joystick.get_axis(2))
+                        self.lockRY = self.map_value(-joystick.get_axis(3))
+                        sleep(0.1)
+                            #print(f"Axis {i} value: {axis:>6.3f}")
             except Exception as e:
-                print(e + " lol")
+                pass
+                #print(str(e) + " lol")
+    def map_value(self, value):
+        return (value + 1) * 50
 
 
 
