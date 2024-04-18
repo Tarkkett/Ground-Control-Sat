@@ -156,6 +156,13 @@ class GamepadGUI():
         self.barLeftY = Progressbar(self.frame, length=100, style="LabeledProgressbar", orient="vertical")
         self.barRightX = Progressbar(self.frame, length=100, style="LabeledProgressbar", orient="vertical")
         self.barRightY = Progressbar(self.frame, length=100, style="LabeledProgressbar", orient="vertical")
+        self.labelLeftX = Label(self.frame, text="LX", bg="gray")
+        self.labelLeftY = Label(self.frame, text="LY", bg="gray")
+        self.labelRightX = Label(self.frame, text="RX", bg="gray")
+        self.labelRightY = Label(self.frame, text="RY", bg="gray")
+        self.minusOne = Label(self.frame, text="-1", bg="gray")
+        self.plusOne = Label(self.frame, text="+1", bg="gray")
+        self.zero = Label(self.frame, text="0", bg="gray")
         
 
         self.GamepadGUIOpen()
@@ -170,18 +177,25 @@ class GamepadGUI():
                 self.barLeftY["value"] = int(gamepad.lockLY)
                 self.barRightX["value"] = int(gamepad.lockRX)
                 self.barRightY["value"] = int(gamepad.lockRY)
-                self.s.configure("LabeledProgressbar", text="{0} %      ".format(int(gamepad.lockLX)))
-                self.s.configure("LabeledProgressbar", text="{0} %      ".format(int(gamepad.lockLY)))
-                self.s.configure("LabeledProgressbar", text="{0} %      ".format(int(gamepad.lockRX)))
-                self.s.configure("LabeledProgressbar", text="{0} %      ".format(int(gamepad.lockRY)))
+                self.s.configure("LabeledProgressbar", text="".format(int(gamepad.lockLX)))
+                self.s.configure("LabeledProgressbar", text="".format(int(gamepad.lockLY)))
+                self.s.configure("LabeledProgressbar", text="".format(int(gamepad.lockRX)))
+                self.s.configure("LabeledProgressbar", text="".format(int(gamepad.lockRY)))
                 self.root.update()
 
     def GamepadGUIOpen(self):
         self.frame.grid(row=0,column=9, rowspan=3, columnspan=5, padx=5, pady=5)
-        self.barLeftX.grid(column=1, row= 0, padx= 5, )
-        self.barLeftY.grid(column=2, row= 0, padx= 5)
-        self.barRightX.grid(column=3, row= 0, padx= 5)
-        self.barRightY.grid(column=4, row= 0, padx= 5)
+        self.barLeftX.grid(column=1, row= 0, padx= 5, rowspan=3)
+        self.barLeftY.grid(column=2, row= 0, padx= 5, rowspan=3)
+        self.barRightX.grid(column=3, row= 0, padx= 5, rowspan=3)
+        self.barRightY.grid(column=4, row= 0, padx= 5, rowspan=3)
+        self.labelLeftX.grid(column=1, row=4)
+        self.labelLeftY.grid(column=2, row=4)
+        self.labelRightX.grid(column=3, row=4)
+        self.labelRightY.grid(column=4, row=4)
+        self.minusOne.grid(column=5, row=2)
+        self.plusOne.grid(column=5, row=0)
+        self.zero.grid(column=5, row=1)
     
     def GamepadGUIClose(self):
         for widget in self.frame.winfo_children():
