@@ -51,6 +51,7 @@ class SerialCtrl():
         while self.threading:
             try:
                 self.ser.write(gui.data.sync.encode())
+                #print("Sent Start MSG!")
                 gui.conn.sync_status["text"] = "..Sync.."
                 gui.conn.sync_status["fg"] = "orange"
                 gui.data.RowMsg = self.ser.readline()
@@ -71,7 +72,6 @@ class SerialCtrl():
                         gui.data.GenChannels()
                         gui.data.BuildYData()
                         print(gui.data.Channels, gui.data.YData)
-
                         self.threading = False
                         break
 
@@ -79,6 +79,7 @@ class SerialCtrl():
                     break
             except Exception as e:
                 print(e)
+                print("Common")
 
             cnt += 1
             if self.threading == False:

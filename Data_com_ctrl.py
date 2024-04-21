@@ -13,13 +13,15 @@ class DataMaster():
                                "Voltage"]
 
     def DecodeMsg(self):
+        print(self.RowMsg)
         temp = self.RowMsg.decode('utf-8')
         if len(temp) > 0:
             if "#" in temp:
                 self.msg = temp.split("#")
-                #print(f"Before removing index: {self.msg}")
+                print(f"Before removing index: {self.msg}")
                 del self.msg[0]
-                #print(f"After removing index: {self.msg}")
+                #del self.msg[1]
+                print(f"After removing index: {self.msg}")
                 if self.msg[0] in "D":
                     self.messageLength = 0
                     self.messageLengthCheck = 0

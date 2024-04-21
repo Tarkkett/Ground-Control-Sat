@@ -6,6 +6,7 @@ import tkinter.font as TkFont
 import threading
 from time import sleep
 import matplotlib.pyplot as plt
+import tkintermapview
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from functools import partial
@@ -63,13 +64,13 @@ class ComGUI():
     
     def BaudOptionMenu(self):
         self.clicked_baudr = StringVar()
-        bds = ["-", "300", "9600", "115200"]
+        bds = ["-", "300", "9600", "57600", "115200"]
         self.clicked_baudr.set(bds[0])
         self.drop_baudr = OptionMenu(self.frame, self.clicked_baudr, *bds, command=self.connect_ctrl)
         self.drop_baudr.config(width=10)
 
     def publish(self):
-        self.frame.grid(row=0, column=0, rowspan=3, columnspan=3, padx=5, pady=5)
+        self.frame.grid(row=0, column=0, rowspan=3, columnspan=3, padx=5, pady=5, sticky=N)
 
         self.label_com.grid(column=1, row=2)
         self.drop_com.grid(column=2, row=2)
@@ -94,12 +95,13 @@ class ComGUI():
                 self.btn_refresh["state"] = "disable"
                 self.drop_baudr["state"] = "disable"
                 self.drop_com["state"] = "disable"
-                InfoMsg = f"Connection success! "
+                InfoMsg = f"Connection success!"
                 messagebox.showinfo("showinfo", InfoMsg)
                 
                 #Start Comms and controller
                 self.conn = ConnGUI(self.root, self.serial, self.data, self.mainFont)
                 self.controller = GamepadGUI(self.root, self.gamepad)
+                self.map = MapGUI(self.root, self.mainFont)
 
                 self.serial.t1 = threading.Thread(
                     target = self.serial.SerialSync, args = (self,), daemon=True
@@ -133,6 +135,47 @@ class ComGUI():
         logic = []
         self.connect_ctrl(logic)
 
+class MapGUI():
+    def __init__(self, root, mainFont):
+        self.root = root
+
+        self.threading = True
+
+        self.mapSizeX = 60
+        self.mapSizeY = 60
+
+        self.font = mainFont
+
+        self.frame = LabelFrame(root, text="Map frame", padx=5, pady=5, bg="gray", width=6, height=6)
+        
+        self.map_widget = tkintermapview.TkinterMapView(self.frame, width=800, height=400, corner_radius=20)
+        self.map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom=22)
+        self.zoomLevel = Label(self.frame, text= f"Zoom level: {self.map_widget.last_zoom}x", padx=5, pady=5, bg="gray", font=self.font)
+
+        mapThread = threading.Thread(target = self.UpdateMap, name="Map Thread", daemon=True)
+        mapThread.start()
+        
+
+
+        self.MapGUIOpen()
+
+    def MapGUIOpen(self):
+        self.root.geometry("1850x650")
+        self.frame.grid(row=0, column=14)
+        self.zoomLevel.grid(row=0, column=1, rowspan=4)
+        self.map_widget.grid(row=0, column=0)
+        self.map_widget.set_address("Moletu aerodromas")
+        self.map_widget.set_zoom(0)
+        
+
+    def UpdateMap(self):
+        
+        while self.threading:
+            self.map_widget.update()
+            self.zoomLevel["text"] = f"Zoom level: {self.map_widget.zoom}x"
+            #self.infoLabel["text"] = f"Info: {self.map_widget.info}"
+
+
 class GamepadGUI():
     def __init__(self, root, gamepad):
         self.root = root
@@ -152,7 +195,7 @@ class GamepadGUI():
             'sticky': 'nswe'})])
 
         self.frame = LabelFrame(root, text="Controller data", padx=5, pady=5, bg="gray", width=60, height=60)
-        self.barLeftX = Progressbar(self.frame, length=100, style="LabeledProgressbar", orient="vertical", )
+        self.barLeftX = Progressbar(self.frame, length=100, style="LabeledProgressbar", orient="vertical")
         self.barLeftY = Progressbar(self.frame, length=100, style="LabeledProgressbar", orient="vertical")
         self.barRightX = Progressbar(self.frame, length=100, style="LabeledProgressbar", orient="vertical")
         self.barRightY = Progressbar(self.frame, length=100, style="LabeledProgressbar", orient="vertical")
@@ -184,7 +227,7 @@ class GamepadGUI():
                 self.root.update()
 
     def GamepadGUIOpen(self):
-        self.frame.grid(row=0,column=9, rowspan=3, columnspan=5, padx=5, pady=5)
+        self.frame.grid(row=0,column=9, rowspan=3, columnspan=5, padx=5, pady=5, sticky=N)
         self.barLeftX.grid(column=1, row= 0, padx= 5, rowspan=3)
         self.barLeftY.grid(column=2, row= 0, padx= 5, rowspan=3)
         self.barRightX.grid(column=3, row= 0, padx= 5, rowspan=3)
@@ -240,7 +283,7 @@ class ConnGUI():
 
     def ConnGUIOpen(self):
         self.root.geometry('1200x160')
-        self.frame.grid(row=0,column=4, rowspan=3, columnspan=5, padx=5, pady=5)
+        self.frame.grid(row=0,column=4, rowspan=3, columnspan=5, padx=5, pady=5, sticky=N)
         self.sync_label.grid(column=1, row=1)
         self.sync_status.grid(column=2, row=1)
 
@@ -446,4 +489,6 @@ if __name__ == "__name__":
     RootGUI()
     ComGUI()
     ConnGUI()
+    GamepadGUI()
+    MapGUI()
     DisGUI()
