@@ -7,7 +7,9 @@
 #include <TinyGPSPlus.h>
 #include <cmath>
 #include <Adafruit_BME280.h>
+#include <AceRoutine.h>
 
+using namespace ace_routine;
 
 //=BME280=Temp=Pressure=Humidity
 Adafruit_BME280 bme; // use I2C interface
@@ -17,6 +19,11 @@ Adafruit_Sensor *bme_humidity = bme.getHumiditySensor();
 
 //=XBEE3=radio=
 #define Xbee_Baud 57600
+
+#define MAX_MESSAGE_LENGTH 50 // Maximum length of the message
+
+char message[MAX_MESSAGE_LENGTH]; // Array to store the received message
+int messageIndex = 0;
 
 //=OpenLog=SD=
 #define SD_RX 7
@@ -93,6 +100,7 @@ struct SEND_DATA
 
   float temperature;
   float pressure;
+  float humidity;
   float altitude;
 
   float roll;
@@ -109,11 +117,7 @@ SEND_DATA FeedbackData;
 
 void setup() {
     Serial.begin(115200);
-    // while (!Serial){
-    //   delay(10);
-    // } 
-    pinMode(0, OUTPUT);
-    //pinMode(1, INPUT);
+    delay(1000);
     Serial.println(" ");
     Serial.println("Arduino Nano Esp32-S3 booted successfully!");
     Serial.println("Starting all systems...");
@@ -121,9 +125,11 @@ void setup() {
     InitRadio();
     InitIMU();
     InitGPS();
-    //InitServos();
+    InitServos();
     InitBME();
-    // delay(3000);
+    delay(1000);
+    Serial.println("Begin!");
+
 }
 void InitSD(){
   Serial2.begin(57600, SERIAL_8N1, SD_RX, SD_TX);
@@ -314,14 +320,90 @@ void SetServos(int angle){
   Serial.print("Cos mapped: ");Serial.println(MapToFloat(cos, -1, 1, 0, 180));
 }
 
-bool isSending = true;
-bool isReceiving = true;
-int incomingByte = 0;
 int count = 0;
+
+COROUTINE(transmit) {
+  COROUTINE_LOOP(){
+    //Serial0.print(GetYaw());Serial0.print("/");Serial0.print(temp_event.temperature);Serial0.print("/");Serial0.print(pressure_event.pressure);Serial0.print("/");Serial0.print(humidity_event.relative_humidity);Serial0.print("/");Serial0.print(MapToFloat(sin(0 + radians(GetYaw())), -1, 1, 0, 180));Serial0.print("/");Serial0.print(degrees(GetBearing(targetLat, targetLon, currentLat, currentLon)));//Serial0.print("/");Serial0.println(gps.satellites.value());
+    //Serial0.print("/");Serial0.print(gps.location.lat(), 6);Serial0.print("/");Serial0.print(gps.location.lng(), 6);Serial0.print("/X::");Serial0.print(MapToFloat(sin(radians(GetBearing(targetLat, targetLon, currentLat, currentLon)) + radians(GetYaw())), 1, -1, 0, 180));Serial0.print("/Y::");Serial0.println(MapToFloat(cos(radians(GetBearing(targetLat, targetLon, currentLat, currentLon)) + radians(GetYaw())), 1, -1, 0, 180));
+    Serial0.print(FeedbackData.yaw);Serial0.print("/"); Serial0.println(FeedbackData.temperature);
+    Serial0.flush();
+    COROUTINE_DELAY(60);
+  }
+
+}
+
+COROUTINE(getIMUReadings){
+  COROUTINE_LOOP(){
+    FeedbackData.yaw = GetYaw();
+    FeedbackData.pitch = GetPitch();
+    FeedbackData.roll = GetRoll();
+    COROUTINE_DELAY(400);
+  }
+}
+
+COROUTINE(getBMEReadings){
+  COROUTINE_LOOP(){
+    sensors_event_t temp_event, pressure_event, humidity_event;
+
+    GetBMEData(&temp_event, &pressure_event, &humidity_event);
+    
+    FeedbackData.temperature = temp_event.temperature;
+    FeedbackData.pressure = pressure_event.pressure;
+    FeedbackData.humidity = humidity_event.relative_humidity;
+    COROUTINE_DELAY(400);
+  }
+}
+
+COROUTINE(logToSD){
+  COROUTINE_LOOP(){
+    Serial2.println("Implement");
+    Serial2.flush();
+    COROUTINE_DELAY(500);
+  }
+}
+
+
+COROUTINE(fetchData){
+  COROUTINE_LOOP(){
+    while (Serial0.available() > 0) {
+      // Read the incoming byte
+      char incomingByte = Serial0.read();
+    
+      // Check if the received byte is the end symbol (' ')
+      if (incomingByte == '\n') {
+        // If the end symbol is encountered, print the message and reset the messageIndex
+        message[messageIndex] = '\0'; // Null-terminate the message
+        Serial.print("Received message: ");
+        Serial.println(message);
+        Serial0.flush();
+        messageIndex = 0; // Reset messageIndex for the next message
+      } 
+      else {
+        // Otherwise, add the received byte to the message
+        if (messageIndex < MAX_MESSAGE_LENGTH - 1) { // Ensure we don't exceed the maximum message length
+          message[messageIndex] = incomingByte;
+          messageIndex++;
+        }
+      }
+    }
+    COROUTINE_DELAY(300);
+    
+  }
+}
+
+bool isSending = false;
+bool isReceiving = true;
+
 void loop() {
 
-  count += 1;
-  while (Serial1.available() > 0){
+  transmit.runCoroutine();
+  getIMUReadings.runCoroutine();
+  getBMEReadings.runCoroutine();
+  logToSD.runCoroutine();
+  fetchData.runCoroutine();
+//Serial.println(count);
+  /*while (Serial1.available() > 0){
     gps.encode(Serial1.read());
   }
 
@@ -330,13 +412,16 @@ void loop() {
     FeedbackData.latitude = gps.location.lat();
     FeedbackData.longtitude = gps.location.lng();
   }
-  else{
-    //Serial.println("INVALID!");
-  }
 
   sensors_event_t temp_event, pressure_event, humidity_event;
-  FeedbackData.yaw = GetYaw();
+
   GetBMEData(&temp_event, &pressure_event, &humidity_event);
+
+  FeedbackData.yaw = GetYaw();
+  FeedbackData.roll = GetRoll();
+  FeedbackData.pitch = GetPitch();
+  FeedbackData.pressure = pressure_event.pressure;
+
   //Serial.print("X: "); Serial.println(sin(GetBearing(targetLat, targetLon, FeedbackData.latitude, FeedbackData.longtitude) + radians(GetYaw())));
   //Serial.print("Y: "); Serial.println(cos(GetBearing(targetLat, targetLon, FeedbackData.latitude, FeedbackData.longtitude) + radians(GetYaw())));
 
@@ -355,7 +440,6 @@ void loop() {
   //   Serial.print("I received: ");
   //   Serial.println(incomingByte, DEC);
   // }
-  Serial0.write("#!#3#");
   if(isSending){
     Serial0.print(GetYaw());Serial0.print("/");Serial0.print(temp_event.temperature);Serial0.print("/");Serial0.print(pressure_event.pressure);Serial0.print("/");Serial0.print(humidity_event.relative_humidity);Serial0.print("/");Serial0.print(MapToFloat(sin(0 + radians(GetYaw())), -1, 1, 0, 180));Serial0.print("/");Serial0.print(degrees(GetBearing(targetLat, targetLon, currentLat, currentLon)));//Serial0.print("/");Serial0.println(gps.satellites.value());
     Serial0.print("/");Serial0.print(gps.location.lat(), 6);Serial0.print("/");Serial0.print(gps.location.lng(), 6);Serial0.print("/X::");Serial0.print(MapToFloat(sin(radians(GetBearing(targetLat, targetLon, currentLat, currentLon)) + radians(GetYaw())), 1, -1, 0, 180));Serial0.print("/Y::");Serial0.println(MapToFloat(cos(radians(GetBearing(targetLat, targetLon, currentLat, currentLon)) + radians(GetYaw())), 1, -1, 0, 180));
@@ -369,7 +453,7 @@ void loop() {
   
 
   //SetServos(GetYaw());
-
+  */
 }
 
 void Log(String a, bool send){
