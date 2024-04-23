@@ -5,6 +5,8 @@ class DataMaster():
         self.StartStream = "#A#\n"
         self.StopStream = "#S#\n"
         self.SyncChannel = 0
+        self.control_x = 0
+        self.control_y = 0
         self.msg = []
 
         self.data_ok = False

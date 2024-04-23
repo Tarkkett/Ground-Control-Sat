@@ -106,7 +106,7 @@ class ComGUI():
                 
                 #Start Comms, controller, map and logger
                 self.conn = ConnGUI(self.root, self.serial, self.data, self.mainFont)
-                self.controller = GamepadGUI(self.root, self.gamepad)
+                self.controller = GamepadGUI(self.root, self.gamepad, self.data)
                 self.logger = LoggerGUI(self.root, self.data, self.serial)
                 self.map = MapGUI(self.root, self.mainFont)
 
@@ -244,11 +244,12 @@ class MapGUI():
 
 
 class GamepadGUI():
-    def __init__(self, root, gamepad):
+    def __init__(self, root, gamepad, data):
+        self.data = data
         self.root = root
         self.gamepad = gamepad
         self.threading = True
-        monitorThread = threading.Thread(target=self.UpdateControllerData, args=(self.gamepad,), name="Gamepad Monitor", daemon=True)
+        monitorThread = threading.Thread(target=self.UpdateControllerData, name="Gamepad Monitor", daemon=True)
         
 
         self.s = Style(self.root)
@@ -278,19 +279,26 @@ class GamepadGUI():
         self.GamepadGUIOpen()
         monitorThread.start()
     
-    def UpdateControllerData(self, gamepad):
+    def UpdateControllerData(self):
         
-        while self.threading and len(gamepad.joysticks) > 0 and gamepad.threading ==True:
+        while self.threading and len(self.gamepad.joysticks) > 0 and self.gamepad.threading ==True:
             try:
-                self.barLeftX["value"] = int(gamepad.lockLX)
-                self.barLeftY["value"] = int(gamepad.lockLY)
-                self.barRightX["value"] = int(gamepad.lockRX)
-                self.barRightY["value"] = int(gamepad.lockRY)
-                self.s.configure("LabeledProgressbar", text="".format(int(gamepad.lockLX)))
-                self.s.configure("LabeledProgressbar", text="".format(int(gamepad.lockLY)))
-                self.s.configure("LabeledProgressbar", text="".format(int(gamepad.lockRX)))
-                self.s.configure("LabeledProgressbar", text="".format(int(gamepad.lockRY)))
+                sleep(0.1)
+                if self.gamepad.isControlMode:
+                    self.data.control_x = self.gamepad.x
+                    self.data.control_y = self.gamepad.y
+                    print(self.data.control_x)
+                    print(self.data.control_y)
+                self.barLeftX["value"] = int(self.gamepad.lockLX)
+                self.barLeftY["value"] = int(self.gamepad.lockLY)
+                self.barRightX["value"] = int(self.gamepad.lockRX)
+                self.barRightY["value"] = int(self.gamepad.lockRY)
+                self.s.configure("LabeledProgressbar", text="".format(int(self.gamepad.lockLX)))
+                self.s.configure("LabeledProgressbar", text="".format(int(self.gamepad.lockLY)))
+                self.s.configure("LabeledProgressbar", text="".format(int(self.gamepad.lockRX)))
+                self.s.configure("LabeledProgressbar", text="".format(int(self.gamepad.lockRY)))
                 self.root.update()
+                print(self.gamepad.isControlMode)
             except Exception as e:
                 print(e)
 
@@ -389,7 +397,7 @@ class ConnGUI():
         self.btn_start_stream["state"]="active"
         self.btn_stop_stream["state"]="disabled"
         self.serial.threading = False
-        sleep(2)
+        sleep(1)
         self.data.data_ok = False
         print("Changed to false!")
 

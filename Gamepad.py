@@ -10,6 +10,7 @@ class GamepadCtrl:
         self.joysticks = {}
         print(self.joysticks)
         threading.Thread(target=self.run, daemon=True, name="GamepadThread").start()
+        self.isControlMode = False
 
     def run(self):
         
@@ -19,6 +20,14 @@ class GamepadCtrl:
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
                         self.threading = False
+
+                    if event.type == pygame.JOYBUTTONDOWN:
+                        print("Joystick button pressed.")
+                        self.isControlMode = not self.isControlMode
+                        if event.button == 0:
+                            joystick =self.joysticks[event.instance_id]
+                            if joystick.rumble(0, 0.7, 500):
+                                print(f"Rumble effect played on joystick {event.instance_id}")
 
                     if event.type == pygame.JOYDEVICEADDED:
 
@@ -37,11 +46,13 @@ class GamepadCtrl:
 
                     #axes = joystick.get_numaxes()
                     if self.threading:
-                            
+                        self.x = self.map_value(joystick.get_axis(0))     
+                        self.y = self.map_value(-joystick.get_axis(1))
                         self.lockLX = self.map_value(joystick.get_axis(0))
                         self.lockLY = self.map_value(-joystick.get_axis(1))
                         self.lockRX = self.map_value(joystick.get_axis(2))
                         self.lockRY = self.map_value(-joystick.get_axis(3))
+                        
                         sleep(0.1)
                             #print(f"Axis {i} value: {axis:>6.3f}")
             except Exception as e:
