@@ -75,7 +75,6 @@ class SerialCtrl():
                         print(gui.data.Channels, gui.data.YData)
                         self.threading = False
                         break
-
                 if self.threading == False:
                     break
             except Exception as e:
@@ -107,6 +106,7 @@ class SerialCtrl():
     def StopStream(self, gui):
         try:
             self.ser.write(gui.data.StopStream.encode())
+            gui.data.data_ok = False
         except Exception as e:
             print(e)
 

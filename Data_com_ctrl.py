@@ -8,6 +8,7 @@ class DataMaster():
         self.msg = []
 
         self.data_ok = False
+        print("Set to false!")
 
         self.XData = []
         self.YData = []
@@ -27,6 +28,7 @@ class DataMaster():
                 print(f"After removing index: {self.msg}")
                 if self.msg[0] in "D":
                     self.data_ok = True
+                    print("OK!")
                     self.messageLength = 0
                     self.messageLengthCheck = 0
                     
@@ -36,6 +38,11 @@ class DataMaster():
                     self.messageLength = float(self.msg[len(self.msg)-1])
                     print(F"Length: {self.messageLength}")
                     del self.msg[len(self.msg)-1]
+                else:
+                    self.data_ok = False
+                    print("Changed to false!")
+
+                
                     
 
     def GenChannels(self):

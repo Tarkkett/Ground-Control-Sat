@@ -121,9 +121,6 @@ SEND_DATA FeedbackData;
 
 void setup() {
     Serial.begin(115200);
-    while(!Serial){
-      delay(10);
-    }
     Serial.println(" ");
     Serial.println("Arduino Nano Esp32-S3 booted successfully!");
     Serial.println("Starting all systems...");
@@ -394,6 +391,7 @@ COROUTINE(fetchData){
         }
         else if(strcmp(message, "#S#") == 0){
           isSending = false;
+          Serial0.println("#P#");
         }
         
         message[messageIndex] = '\0';
@@ -479,6 +477,8 @@ void loop() {
 
   //SetServos(GetYaw());
   */
+  servoX.write(90);
+  servoY.write(90);
 }
 
 void Log(String a, bool send){

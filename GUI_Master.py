@@ -27,11 +27,15 @@ class RootGUI:
         self.root.protocol("WM_DELETE_WINDOW", self.close_window)
 
     def close_window(self):
+        
         print("Closing the main window now!")
+        self.gamepad.theading = False
         self.root.destroy()
         self.serial.SerialClose(self)
         self.serial.threading = False
-        self.gamepad.theading = False
+        
+        
+        
 
 class ComGUI():
     def __init__(self, root, serial, data, gamepad):
@@ -115,16 +119,19 @@ class ComGUI():
                 ErrorMsg = f"FATAL Error trying to connect in the last step! "
                 messagebox.showerror("showerror", ErrorMsg)
         else:
+            self.gamepad.threading = False
+            self.controller.threading = False
             self.conn.stop_stream()
             self.serial.threading = False
-            self.controller.threading = False
+
             self.map.threading = False
             self.logger.threading = False
             self.serial.SerialClose(self)
+            self.logger.LoggerGUIClose()
             self.conn.ConnGUIClose()
             self.controller.GamepadGUIClose()
             self.map.MapGUIClose()
-            self.logger.LoggerGUIClose()
+            
             
             self.data.ClearData()
             
@@ -151,11 +158,11 @@ class LoggerGUI():
         self.serial = serial
 
         self.frame = LabelFrame(root, text="Data Logger", padx=5, pady=5, bg="gray")
-        self.dataCanvas = Canvas(self.frame, width=570, height=280, background="black")
+        self.dataCanvas = Canvas(self.frame, width=600, height=280, background="black", highlightbackground="black")
         self.vsb = Scrollbar(self.frame, orient='vertical', command=self.dataCanvas.yview)
 
-        self.dataFrame = Frame(self.dataCanvas, bg="white")
-        self.dataCanvas.create_window((10,0),window=self.dataFrame,anchor='nw')
+        self.dataFrame = Frame(self.dataCanvas, bg="black", pady=5)
+        self.dataCanvas.create_window((5,10),window=self.dataFrame,anchor='nw')
         
 
         self.threading = True
@@ -166,9 +173,9 @@ class LoggerGUI():
     
     def PullLog(self):
         while self.threading:
-            Label(self.dataFrame, text="AOK!---->")
             if self.data.data_ok:
-                Label(self.dataFrame, text="AOK!---->")
+                Label(master=self.dataFrame, text=f">>{self.data.msg}", foreground="lime", background="black", pady=3).pack()
+            sleep(0.4)
 
             self.dataCanvas.config(scrollregion=self.dataCanvas.bbox("all"))
                 
@@ -225,8 +232,8 @@ class MapGUI():
     def UpdateMap(self):
         
         while self.threading:
-            self.map_widget.update()
             self.zoomLevel["text"] = f"Zoom level: {self.map_widget.zoom}x"
+            self.map_widget.update()
             #self.infoLabel["text"] = f"Info: {self.map_widget.info}"
     
     def MapGUIClose(self):
@@ -242,7 +249,7 @@ class GamepadGUI():
         self.gamepad = gamepad
         self.threading = True
         monitorThread = threading.Thread(target=self.UpdateControllerData, args=(self.gamepad,), name="Gamepad Monitor", daemon=True)
-        monitorThread.start()
+        
 
         self.s = Style(self.root)
 
@@ -269,14 +276,12 @@ class GamepadGUI():
         
 
         self.GamepadGUIOpen()
-
+        monitorThread.start()
+    
     def UpdateControllerData(self, gamepad):
         
-        while self.threading:
-            sleep(0.1)
-            #self.barX.step()
-            if self.threading and len(self.gamepad.joysticks) > 0:
-                print("Reached")
+        while self.threading and len(gamepad.joysticks) > 0 and gamepad.threading ==True:
+            try:
                 self.barLeftX["value"] = int(gamepad.lockLX)
                 self.barLeftY["value"] = int(gamepad.lockLY)
                 self.barRightX["value"] = int(gamepad.lockRX)
@@ -286,6 +291,8 @@ class GamepadGUI():
                 self.s.configure("LabeledProgressbar", text="".format(int(gamepad.lockRX)))
                 self.s.configure("LabeledProgressbar", text="".format(int(gamepad.lockRY)))
                 self.root.update()
+            except Exception as e:
+                print(e)
 
     def GamepadGUIOpen(self):
         #Gamepad frame
@@ -382,6 +389,9 @@ class ConnGUI():
         self.btn_start_stream["state"]="active"
         self.btn_stop_stream["state"]="disabled"
         self.serial.threading = False
+        sleep(2)
+        self.data.data_ok = False
+        print("Changed to false!")
 
     def save_data(self):
         pass
