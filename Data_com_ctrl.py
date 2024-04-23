@@ -7,12 +7,15 @@ class DataMaster():
         self.SyncChannel = 0
         self.msg = []
 
+        self.data_ok = False
+
         self.XData = []
         self.YData = []
         self.FunctionMaster = ["RawData",
                                "Voltage"]
 
     def DecodeMsg(self):
+        print("Decode 1")
         print(self.RowMsg)
         temp = self.RowMsg.decode('utf-8')
         if len(temp) > 0:
@@ -23,12 +26,17 @@ class DataMaster():
                 #del self.msg[1]
                 print(f"After removing index: {self.msg}")
                 if self.msg[0] in "D":
+                    self.data_ok = True
                     self.messageLength = 0
                     self.messageLengthCheck = 0
+                    
                     del self.msg[0]
                     del self.msg[len(self.msg)-1]
-                    self.messageLength = int(self.msg[len(self.msg)-1])
+                    
+                    self.messageLength = float(self.msg[len(self.msg)-1])
+                    print(F"Length: {self.messageLength}")
                     del self.msg[len(self.msg)-1]
+                    
 
     def GenChannels(self):
         self.Channels = [f"Ch{ch}" for ch in range(self.SyncChannel)]

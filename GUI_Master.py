@@ -100,10 +100,10 @@ class ComGUI():
                 InfoMsg = f"Connection success!"
                 messagebox.showinfo("showinfo", InfoMsg)
                 
-                #Start Comms and controller
+                #Start Comms, controller, map and logger
                 self.conn = ConnGUI(self.root, self.serial, self.data, self.mainFont)
                 self.controller = GamepadGUI(self.root, self.gamepad)
-                self.logger = LoggerGUI(self.root)
+                self.logger = LoggerGUI(self.root, self.data, self.serial)
                 self.map = MapGUI(self.root, self.mainFont)
 
                 self.serial.t1 = threading.Thread(
@@ -115,13 +115,17 @@ class ComGUI():
                 ErrorMsg = f"FATAL Error trying to connect in the last step! "
                 messagebox.showerror("showerror", ErrorMsg)
         else:
+            self.conn.stop_stream()
             self.serial.threading = False
             self.controller.threading = False
             self.map.threading = False
+            self.logger.threading = False
             self.serial.SerialClose(self)
             self.conn.ConnGUIClose()
             self.controller.GamepadGUIClose()
             self.map.MapGUIClose()
+            self.logger.LoggerGUIClose()
+            
             self.data.ClearData()
             
             InfoMsg = f"Connection is now closed! "
@@ -141,18 +145,46 @@ class ComGUI():
         self.connect_ctrl(logic)
 
 class LoggerGUI():
-    def __init__(self, root):
+    def __init__(self, root, data, serial):
         self.root = root
+        self.data = data
+        self.serial = serial
 
         self.frame = LabelFrame(root, text="Data Logger", padx=5, pady=5, bg="gray")
-        self.label = Text(self.frame, padx=5, pady=5, width=70, height=16)
+        self.dataCanvas = Canvas(self.frame, width=570, height=280, background="black")
+        self.vsb = Scrollbar(self.frame, orient='vertical', command=self.dataCanvas.yview)
 
+        self.dataFrame = Frame(self.dataCanvas, bg="white")
+        self.dataCanvas.create_window((10,0),window=self.dataFrame,anchor='nw')
+        
+
+        self.threading = True
+
+        self.loggerThread = threading.Thread(target=self.PullLog, name="Log thread", daemon=True)
+        self.loggerThread.start()
         self.LoggerGUIOpen()
     
+    def PullLog(self):
+        while self.threading:
+            Label(self.dataFrame, text="AOK!---->")
+            if self.data.data_ok:
+                Label(self.dataFrame, text="AOK!---->")
+
+            self.dataCanvas.config(scrollregion=self.dataCanvas.bbox("all"))
+                
     def LoggerGUIOpen(self):
         #messagebox.showwarning("Warning!", "Should place!")
         self.frame.grid(row=3, column=2, rowspan=1, columnspan=5, padx=5, pady=5)
-        self.label.grid(row=0, column=0)
+        self.dataCanvas.grid(row=0, column=0)
+        self.vsb.grid(row=0, column=2, rowspan=100, sticky='ns')
+
+        self.dataCanvas.config(yscrollcommand = self.vsb.set)
+
+    def LoggerGUIClose(self):
+        for widget in self.frame.winfo_children():
+            widget.destroy()
+        self.frame.destroy()
+        self.root.geometry("360x120")
 
 class MapGUI():
     def __init__(self, root, mainFont):
@@ -243,7 +275,8 @@ class GamepadGUI():
         while self.threading:
             sleep(0.1)
             #self.barX.step()
-            if self.threading:
+            if self.threading and len(self.gamepad.joysticks) > 0:
+                print("Reached")
                 self.barLeftX["value"] = int(gamepad.lockLX)
                 self.barLeftY["value"] = int(gamepad.lockLY)
                 self.barRightX["value"] = int(gamepad.lockRX)
@@ -345,6 +378,7 @@ class ConnGUI():
         self.serial.t1.start()
 
     def stop_stream(self):
+        self.serial.StopStream(self)
         self.btn_start_stream["state"]="active"
         self.btn_stop_stream["state"]="disabled"
         self.serial.threading = False

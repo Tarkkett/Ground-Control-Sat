@@ -121,7 +121,9 @@ SEND_DATA FeedbackData;
 
 void setup() {
     Serial.begin(115200);
-    delay(1000);
+    while(!Serial){
+      delay(10);
+    }
     Serial.println(" ");
     Serial.println("Arduino Nano Esp32-S3 booted successfully!");
     Serial.println("Starting all systems...");
@@ -331,7 +333,8 @@ COROUTINE(transmit) {
     //Serial0.print(GetYaw());Serial0.print("/");Serial0.print(temp_event.temperature);Serial0.print("/");Serial0.print(pressure_event.pressure);Serial0.print("/");Serial0.print(humidity_event.relative_humidity);Serial0.print("/");Serial0.print(MapToFloat(sin(0 + radians(GetYaw())), -1, 1, 0, 180));Serial0.print("/");Serial0.print(degrees(GetBearing(targetLat, targetLon, currentLat, currentLon)));//Serial0.print("/");Serial0.println(gps.satellites.value());
     //Serial0.print("/");Serial0.print(gps.location.lat(), 6);Serial0.print("/");Serial0.print(gps.location.lng(), 6);Serial0.print("/X::");Serial0.print(MapToFloat(sin(radians(GetBearing(targetLat, targetLon, currentLat, currentLon)) + radians(GetYaw())), 1, -1, 0, 180));Serial0.print("/Y::");Serial0.println(MapToFloat(cos(radians(GetBearing(targetLat, targetLon, currentLat, currentLon)) + radians(GetYaw())), 1, -1, 0, 180));
     if(isSending){
-      Serial0.print(FeedbackData.yaw);Serial0.print("/"); Serial0.println(FeedbackData.temperature);
+      Serial.println("Send DATA!!");
+      Serial0.print("#D#"); Serial0.print(FeedbackData.yaw);Serial0.print("#"); Serial0.print(FeedbackData.temperature);Serial0.print("#"); Serial0.print(FeedbackData.humidity); Serial0.print("#"); Serial0.print(FeedbackData.pressure); Serial0.print("#"); Serial0.print("10.0"); Serial0.println("#");
       Serial0.flush();
       
     }
@@ -380,12 +383,18 @@ COROUTINE(fetchData){
       char incomingByte = Serial0.read();
 
       if (incomingByte == '\n') {
-        if (strcmp(message, "#?#") == 0) { // Check if the received message is "#?#"
-              // Do something here if the received message is "#?#"
-              isSending = true;
-              Serial0.println("#!#2#");
-              Serial.println("Sent start msg!");
-            }
+        if (strcmp(message, "#?#") == 0) {
+          // Do something here if the received message is "#?#"
+          
+          Serial0.println("#!#4#");
+          Serial.println("Sent start msg!");
+        }
+        else if(strcmp(message, "#A#") == 0){
+          isSending = true;
+        }
+        else if(strcmp(message, "#S#") == 0){
+          isSending = false;
+        }
         
         message[messageIndex] = '\0';
         Serial.print("Received message: ");

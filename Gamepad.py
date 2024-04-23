@@ -8,6 +8,7 @@ class GamepadCtrl:
     def __init__(self):
         pygame.init()
         self.joysticks = {}
+        print(self.joysticks)
         self.threading = True
         threading.Thread(target=self.run, daemon=True, name="GamepadThread").start()
 

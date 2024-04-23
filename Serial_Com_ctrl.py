@@ -59,6 +59,7 @@ class SerialCtrl():
                 gui.data.DecodeMsg()
 
                 if gui.data.sync_ok in gui.data.msg[0]:
+                    
                     if int(gui.data.msg[1]) > 0:
                         gui.conn.btn_start_stream["state"] = "active"
                         gui.conn.btn_add_chart["state"] = "active"
@@ -79,7 +80,7 @@ class SerialCtrl():
                     break
             except Exception as e:
                 print(e)
-                print("Common")
+                #print("Common")
 
             cnt += 1
             if self.threading == False:
@@ -95,7 +96,6 @@ class SerialCtrl():
 
     def SerialDataStream(self, gui):
         self.threading = True
-        cnt=0
         while self.threading:
             try:
                 self.ser.write(gui.data.StartStream.encode())
@@ -104,6 +104,11 @@ class SerialCtrl():
             except Exception as e:
                 print(e)
             
-        
+    def StopStream(self, gui):
+        try:
+            self.ser.write(gui.data.StopStream.encode())
+        except Exception as e:
+            print(e)
+
 if __name__ == "__main__":
     SerialCtrl()
