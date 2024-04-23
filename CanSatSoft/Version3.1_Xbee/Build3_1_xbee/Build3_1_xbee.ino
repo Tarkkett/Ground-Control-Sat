@@ -25,6 +25,10 @@ Adafruit_Sensor *bme_humidity = bme.getHumiditySensor();
 char message[MAX_MESSAGE_LENGTH]; // Array to store the received message
 int messageIndex = 0;
 
+
+bool isSending = false;
+bool isReceiving = true;
+
 //=OpenLog=SD=
 #define SD_RX 7
 #define SD_TX 8
@@ -326,9 +330,14 @@ COROUTINE(transmit) {
   COROUTINE_LOOP(){
     //Serial0.print(GetYaw());Serial0.print("/");Serial0.print(temp_event.temperature);Serial0.print("/");Serial0.print(pressure_event.pressure);Serial0.print("/");Serial0.print(humidity_event.relative_humidity);Serial0.print("/");Serial0.print(MapToFloat(sin(0 + radians(GetYaw())), -1, 1, 0, 180));Serial0.print("/");Serial0.print(degrees(GetBearing(targetLat, targetLon, currentLat, currentLon)));//Serial0.print("/");Serial0.println(gps.satellites.value());
     //Serial0.print("/");Serial0.print(gps.location.lat(), 6);Serial0.print("/");Serial0.print(gps.location.lng(), 6);Serial0.print("/X::");Serial0.print(MapToFloat(sin(radians(GetBearing(targetLat, targetLon, currentLat, currentLon)) + radians(GetYaw())), 1, -1, 0, 180));Serial0.print("/Y::");Serial0.println(MapToFloat(cos(radians(GetBearing(targetLat, targetLon, currentLat, currentLon)) + radians(GetYaw())), 1, -1, 0, 180));
-    Serial0.print(FeedbackData.yaw);Serial0.print("/"); Serial0.println(FeedbackData.temperature);
-    Serial0.flush();
-    COROUTINE_DELAY(60);
+    if(isSending){
+      Serial0.print(FeedbackData.yaw);Serial0.print("/"); Serial0.println(FeedbackData.temperature);
+      Serial0.flush();
+      
+    }
+
+
+    COROUTINE_DELAY(60);  
   }
 
 }
@@ -367,23 +376,32 @@ COROUTINE(logToSD){
 COROUTINE(fetchData){
   COROUTINE_LOOP(){
     while (Serial0.available() > 0) {
-      // Read the incoming byte
+
       char incomingByte = Serial0.read();
-    
-      // Check if the received byte is the end symbol (' ')
+
       if (incomingByte == '\n') {
-        // If the end symbol is encountered, print the message and reset the messageIndex
-        message[messageIndex] = '\0'; // Null-terminate the message
+        if (strcmp(message, "#?#") == 0) { // Check if the received message is "#?#"
+              // Do something here if the received message is "#?#"
+              isSending = true;
+              Serial0.println("#!#2#");
+              Serial.println("Sent start msg!");
+            }
+        
+        message[messageIndex] = '\0';
         Serial.print("Received message: ");
         Serial.println(message);
         Serial0.flush();
-        messageIndex = 0; // Reset messageIndex for the next message
+        messageIndex = 0;
+        
       } 
       else {
-        // Otherwise, add the received byte to the message
-        if (messageIndex < MAX_MESSAGE_LENGTH - 1) { // Ensure we don't exceed the maximum message length
+
+        if (messageIndex < MAX_MESSAGE_LENGTH - 1) {
           message[messageIndex] = incomingByte;
           messageIndex++;
+        }
+        else{
+          Serial.println("Overflow!");
         }
       }
     }
@@ -392,8 +410,6 @@ COROUTINE(fetchData){
   }
 }
 
-bool isSending = false;
-bool isReceiving = true;
 
 void loop() {
 

@@ -150,7 +150,7 @@ class LoggerGUI():
         self.LoggerGUIOpen()
     
     def LoggerGUIOpen(self):
-        messagebox.showwarning("Warning!", "Should place!")
+        #messagebox.showwarning("Warning!", "Should place!")
         self.frame.grid(row=3, column=2, rowspan=1, columnspan=5, padx=5, pady=5)
         self.label.grid(row=0, column=0)
 
@@ -176,7 +176,7 @@ class MapGUI():
         self.mapThread.start()
         
 
-        messagebox.showwarning("Warning!", "Should place!")
+        #messagebox.showwarning("Warning!", "Should place!")
         self.MapGUIOpen()
 
     def MapGUIOpen(self):
@@ -187,7 +187,7 @@ class MapGUI():
         self.zoomLevel.grid(row=0, column=1, rowspan=4)
         self.map_widget.grid(row=0, column=0)
         self.map_widget.set_address("Moletu aerodromas")
-        self.map_widget.set_zoom(0)
+        self.map_widget.set_zoom(18)
         
 
     def UpdateMap(self):
