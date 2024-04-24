@@ -29,6 +29,7 @@ class RootGUI:
     def close_window(self):
         
         print("Closing the main window now!")
+        
         self.gamepad.theading = False
         self.root.destroy()
         self.serial.SerialClose(self)
@@ -105,10 +106,11 @@ class ComGUI():
                 messagebox.showinfo("showinfo", InfoMsg)
                 
                 #Start Comms, controller, map and logger
-                self.conn = ConnGUI(self.root, self.serial, self.data, self.mainFont)
-                self.controller = GamepadGUI(self.root, self.gamepad, self.data)
+                
+                self.controller = GamepadGUI(self.root, self.gamepad, self.data, self.serial)
                 self.logger = LoggerGUI(self.root, self.data, self.serial)
-                self.map = MapGUI(self.root, self.mainFont)
+                self.map = MapGUI(self.root, self.mainFont, self.data)
+                self.conn = ConnGUI(self.root, self.serial, self.data, self.mainFont, self.logger)
 
                 self.serial.t1 = threading.Thread(
                     target = self.serial.SerialSync, args = (self,), daemon=True
@@ -174,12 +176,18 @@ class LoggerGUI():
     def PullLog(self):
         while self.threading:
             if self.data.data_ok:
-                Label(master=self.dataFrame, text=f">>{self.data.msg}", foreground="lime", background="black", pady=3).pack()
-            sleep(0.4)
+                
+                Label(master=self.dataFrame, text=f">>{self.data.parsedMsg}", foreground="lime", background="black", pady=3).pack()
+                if len(self.dataFrame.winfo_children()) > 100:
+                    self.dataFrame.winfo_children()[0].destroy()
+                #print(self.data.parsedMsg)
+                self.dataCanvas.yview_moveto(1)
+            sleep(0.05)
 
             self.dataCanvas.config(scrollregion=self.dataCanvas.bbox("all"))
                 
     def LoggerGUIOpen(self):
+        
         #messagebox.showwarning("Warning!", "Should place!")
         self.frame.grid(row=3, column=2, rowspan=1, columnspan=5, padx=5, pady=5)
         self.dataCanvas.grid(row=0, column=0)
@@ -194,16 +202,20 @@ class LoggerGUI():
         self.root.geometry("360x120")
 
 class MapGUI():
-    def __init__(self, root, mainFont):
+    def __init__(self, root, mainFont, data):
         self.root = root
-
+        self.data = data
         self.threading = True
 
         self.mapSizeX = 60
         self.mapSizeY = 60
 
         self.font = mainFont
+        self.markerList = [(60.0,50.0)]
 
+        self.currentX = 0
+        self.currentY = 0
+        self.tuple = (12.0, 12.0)
         
         self.frame = LabelFrame(root, text="Map frame", padx=5, pady=5, bg="gray", relief="ridge")
         
@@ -213,7 +225,7 @@ class MapGUI():
 
         self.mapThread = threading.Thread(target = self.UpdateMap, name="Map Thread", daemon=True)
         self.mapThread.start()
-        
+        print("Started thread!")
 
         #messagebox.showwarning("Warning!", "Should place!")
         self.MapGUIOpen()
@@ -225,15 +237,27 @@ class MapGUI():
         self.frame.grid(row=0, column=7, padx=5, pady=5, rowspan=4, sticky=NW)
         self.zoomLevel.grid(row=0, column=1, rowspan=4)
         self.map_widget.grid(row=0, column=0)
-        self.map_widget.set_address("Moletu aerodromas")
+        self.map_widget.set_address("Moletu aerodromas", marker=True)
         self.map_widget.set_zoom(18)
         
 
     def UpdateMap(self):
         
         while self.threading:
-            self.zoomLevel["text"] = f"Zoom level: {self.map_widget.zoom}x"
-            self.map_widget.update()
+            sleep(10)
+            print("OK!")
+            if self.data.data_ok:
+                
+                self.currentX = float(self.data.parsedMsg[1])
+                self.currentY = float(self.data.parsedMsg[2])
+                self.tuple = (self.currentX, self.currentY)
+                print(self.tuple)
+                    
+                self.markerList.append(self.tuple)
+                self.map_widget.set_path(self.markerList)
+                self.zoomLevel["text"] = f"Zoom level: {self.map_widget.zoom}x"
+                
+                self.map_widget.update()
             #self.infoLabel["text"] = f"Info: {self.map_widget.info}"
     
     def MapGUIClose(self):
@@ -244,10 +268,11 @@ class MapGUI():
 
 
 class GamepadGUI():
-    def __init__(self, root, gamepad, data):
+    def __init__(self, root, gamepad, data, serial):
         self.data = data
         self.root = root
         self.gamepad = gamepad
+        self.serial = serial
         self.threading = True
         monitorThread = threading.Thread(target=self.UpdateControllerData, name="Gamepad Monitor", daemon=True)
         
@@ -285,10 +310,20 @@ class GamepadGUI():
             try:
                 sleep(0.1)
                 if self.gamepad.isControlMode:
-                    self.data.control_x = self.gamepad.x
-                    self.data.control_y = self.gamepad.y
-                    self.controlRequest = f"#C#{self.data.control_x}#{self.data.control_y}#"
-                    self.controlRequest.encode()
+                    self.data.control_x = int(self.gamepad.x)
+                    self.data.control_y = int(self.gamepad.y)
+                    self.controlRequest = f"#C#{self.data.control_x}#{self.data.control_y}#\n"
+                    
+                    self.serial.ser.write(self.controlRequest.encode())
+                    print(f"Sent!-> {self.controlRequest}")
+                else:
+                    self.serial.ser.write(self.data.GPSModeCommand.encode())
+                
+                if self.gamepad.isBuzzing:
+                    self.serial.ser.write(self.data.BuzzCommand.encode())
+                    print("This!")
+                else:
+                    self.serial.ser.write(self.data.StopBuzzCommand.encode())
                     
 
                 self.barLeftX["value"] = int(self.gamepad.lockLX)
@@ -300,7 +335,7 @@ class GamepadGUI():
                 self.s.configure("LabeledProgressbar", text="".format(int(self.gamepad.lockRX)))
                 self.s.configure("LabeledProgressbar", text="".format(int(self.gamepad.lockRY)))
                 self.root.update()
-                print(self.gamepad.isControlMode)
+                #print(self.gamepad.isControlMode)
             except Exception as e:
                 print(e)
 
@@ -327,11 +362,12 @@ class GamepadGUI():
 
 
 class ConnGUI():
-    def __init__(self, root, serial, data, mainFont):
+    def __init__(self, root, serial, data, mainFont, logger):
         self.root = root
         self.serial = serial
         self.data = data
         self.mainFont = mainFont
+        self.logger = logger
 
         self.frame = LabelFrame(root, text="Connection manager", padx=5, pady=5, bg='grey')
 
@@ -350,6 +386,7 @@ class ConnGUI():
 
         self.save = False
         self.SaveVar = IntVar()
+
         self.save_check = Checkbutton(self.frame, text="Save data", variable=self.SaveVar, onvalue=1, offvalue=0, bg="grey", state="disabled", command=self.save_data)
 
         self.separator = ttk.Separator(self.frame, orient = 'vertical')
@@ -358,7 +395,7 @@ class ConnGUI():
         self.padx = 20
 
         self.ConnGUIOpen()
-        self.chartMaster = DisGUI(self.root, self.serial, self.data)
+        self.chartMaster = DisGUI(self.root, self.serial, self.data, self.logger)
 
     def ConnGUIOpen(self):
         self.root.geometry('1280x720')
@@ -404,7 +441,25 @@ class ConnGUI():
         print("Changed to false!")
 
     def save_data(self):
-        pass
+        self.f = open("flight_data.txt", "a")
+        self.threading = True
+        t1 = threading.Thread(target=self.writeToFile, daemon=True)
+        t1.start()
+
+    def writeToFile(self):
+        while self.threading: 
+            if self.SaveVar.get() == 1:
+                if self.data.data_ok:
+                    self.f.write(str(self.data.parsedMsg) + "\n")
+                    print("Wrote!")
+                else:
+                    print("Data not ok!")
+            else:
+                print("Toggle off!")
+                print(self.SaveVar.get())
+            sleep(0.1)
+        self.f.close()
+
 
     def new_chart(self):
         self.chartMaster.AddChannelMaster()
@@ -433,7 +488,8 @@ class ConnGUI():
             pass
 
 class DisGUI():
-    def __init__(self, root, serial, data):
+    def __init__(self, root, serial, data, logger):
+        self.logger = logger
         self.root = root
         self.serial = serial
         self.data = data

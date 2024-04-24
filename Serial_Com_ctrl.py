@@ -108,6 +108,7 @@ class SerialCtrl():
             self.ser.write(gui.data.StopStream.encode())
             gui.data.data_ok = False
         except Exception as e:
+            gui.data.data_ok = False
             print(e)
 
 if __name__ == "__main__":

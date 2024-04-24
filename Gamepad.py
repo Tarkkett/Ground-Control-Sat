@@ -10,7 +10,9 @@ class GamepadCtrl:
         self.joysticks = {}
         print(self.joysticks)
         threading.Thread(target=self.run, daemon=True, name="GamepadThread").start()
+
         self.isControlMode = False
+        self.isBuzzing = False
 
     def run(self):
         
@@ -23,8 +25,17 @@ class GamepadCtrl:
 
                     if event.type == pygame.JOYBUTTONDOWN:
                         print("Joystick button pressed.")
-                        self.isControlMode = not self.isControlMode
-                        if event.button == 0:
+                        
+                        #X
+                        if event.button == 0: 
+                            self.isControlMode = not self.isControlMode
+                            joystick =self.joysticks[event.instance_id]
+                            if joystick.rumble(0, 0.7, 500):
+                                print(f"Rumble effect played on joystick {event.instance_id}")
+
+                        #O
+                        elif event.button == 1:
+                            self.isBuzzing = not self.isBuzzing
                             joystick =self.joysticks[event.instance_id]
                             if joystick.rumble(0, 0.7, 500):
                                 print(f"Rumble effect played on joystick {event.instance_id}")

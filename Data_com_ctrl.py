@@ -6,10 +6,14 @@ class DataMaster():
         self.StopStream = "#S#\n"
         self.StartController = "#C#\n"
         self.StopController = "#P#\n"
+        self.GPSModeCommand = "#G#\n"
+        self.BuzzCommand = "#B#\n"
+        self.StopBuzzCommand = "#N#\n"
         self.SyncChannel = 0
         self.control_x = 0
         self.control_y = 0
         self.msg = []
+        self.parsedMsg = []
 
         self.data_ok = False
         print("Set to false!")
@@ -20,8 +24,8 @@ class DataMaster():
                                "Voltage"]
 
     def DecodeMsg(self):
-        print("Decode 1")
-        print(self.RowMsg)
+        #print("Decode 1")
+        #print(self.RowMsg)
         temp = self.RowMsg.decode('utf-8')
         if len(temp) > 0:
             if "#" in temp:
@@ -29,10 +33,9 @@ class DataMaster():
                 print(f"Before removing index: {self.msg}")
                 del self.msg[0]
                 #del self.msg[1]
-                print(f"After removing index: {self.msg}")
+                #print(f"After removing index: {self.msg}")
                 if self.msg[0] in "D":
                     self.data_ok = True
-                    print("OK!")
                     self.messageLength = 0
                     self.messageLengthCheck = 0
                     
@@ -42,6 +45,7 @@ class DataMaster():
                     self.messageLength = float(self.msg[len(self.msg)-1])
                     print(F"Length: {self.messageLength}")
                     del self.msg[len(self.msg)-1]
+                    self.parsedMsg = self.msg
                 else:
                     self.data_ok = False
                     print("Changed to false!")

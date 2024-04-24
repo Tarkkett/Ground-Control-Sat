@@ -8,6 +8,8 @@
 #include <cmath>
 #include <Adafruit_BME280.h>
 #include <AceRoutine.h>
+#include <SparkFun_AS7331.h>
+
 
 using namespace ace_routine;
 
@@ -16,6 +18,12 @@ Adafruit_BME280 bme; // use I2C interface
 Adafruit_Sensor *bme_temp = bme.getTemperatureSensor();
 Adafruit_Sensor *bme_pressure = bme.getPressureSensor();
 Adafruit_Sensor *bme_humidity = bme.getHumiditySensor();
+
+//buzzer=pin=6
+#define buzzerPin 6 
+bool isBuzzing = false;
+
+SfeAS7331ArdI2C myUVSensor;
 
 //=XBEE3=radio=
 #define Xbee_Baud 57600
@@ -34,6 +42,9 @@ bool isReceiving = true;
 #define SD_TX 8
 
 //SG90nMG90=servos=
+bool controllerMode = false;
+float servoXYArr[2];
+
 #define PIN_A2 4 //high
 #define PIN_A3 5 //low
 
@@ -94,6 +105,8 @@ struct RECEIVE_DATA
   int idle;
 };
 
+int cnt = 0;
+
 struct SEND_DATA
 {
   float longtitude;
@@ -106,6 +119,10 @@ struct SEND_DATA
   float pressure;
   float humidity;
   float altitude;
+
+  float UVA;
+  float UVB;
+  float UVC;
 
   float roll;
   float pitch;
@@ -130,9 +147,29 @@ void setup() {
     InitGPS();
     InitServos();
     InitBME();
+    InitUV();
     delay(1000);
     Serial.println("Begin!");
 
+}
+
+void InitUV(){
+
+    if(myUVSensor.begin() == false) {
+    Serial.println("UV Sensor failed to begin.");
+    Serial.println("Halting...");
+    while(1);
+  }
+
+  Serial.println("UV Sensor started!.");
+
+  if(myUVSensor.prepareMeasurement(MEAS_MODE_CMD) == false) {
+    Serial.println("Sensor did not get set properly.");
+    Serial.println("Halting...");
+    while(1);
+  }
+
+  Serial.println("UV Set mode to command.");
 }
 void InitSD(){
   Serial2.begin(57600, SERIAL_8N1, SD_RX, SD_TX);
@@ -148,6 +185,9 @@ void InitServos(){
   servoX.attach(PIN_A2);
   servoY.attach(PIN_A3);
   Serial.println("Servos reset!");
+
+  pinMode(buzzerPin, OUTPUT);
+  
 }
 
 void InitGPS(){
@@ -168,6 +208,7 @@ void InitIMU(){
 
   setReports(reportType, reportIntervalUs);
 }
+
 
 void InitRadio(){
   Serial.println("Starting communication to ground!");
@@ -203,6 +244,7 @@ float GetBearing(float lat1, float lon1, float lat2, float lon2){
     //bearing = theta * 57296 / 1000;
     return bearing;
 }
+
 
 void GetBMEData(sensors_event_t *temp_event, sensors_event_t *pressure_event, sensors_event_t *humidity_event){
   bme_temp->getEvent(temp_event);
@@ -330,8 +372,10 @@ COROUTINE(transmit) {
     //Serial0.print(GetYaw());Serial0.print("/");Serial0.print(temp_event.temperature);Serial0.print("/");Serial0.print(pressure_event.pressure);Serial0.print("/");Serial0.print(humidity_event.relative_humidity);Serial0.print("/");Serial0.print(MapToFloat(sin(0 + radians(GetYaw())), -1, 1, 0, 180));Serial0.print("/");Serial0.print(degrees(GetBearing(targetLat, targetLon, currentLat, currentLon)));//Serial0.print("/");Serial0.println(gps.satellites.value());
     //Serial0.print("/");Serial0.print(gps.location.lat(), 6);Serial0.print("/");Serial0.print(gps.location.lng(), 6);Serial0.print("/X::");Serial0.print(MapToFloat(sin(radians(GetBearing(targetLat, targetLon, currentLat, currentLon)) + radians(GetYaw())), 1, -1, 0, 180));Serial0.print("/Y::");Serial0.println(MapToFloat(cos(radians(GetBearing(targetLat, targetLon, currentLat, currentLon)) + radians(GetYaw())), 1, -1, 0, 180));
     if(isSending){
+      cnt++;
       Serial.println("Send DATA!!");
-      Serial0.print("#D#"); Serial0.print(FeedbackData.yaw);Serial0.print("#"); Serial0.print(FeedbackData.temperature);Serial0.print("#"); Serial0.print(FeedbackData.humidity); Serial0.print("#"); Serial0.print(FeedbackData.pressure); Serial0.print("#"); Serial0.print("10.0"); Serial0.println("#");
+      Serial0.print("#D#"); Serial0.print(FeedbackData.UVA); Serial0.print("#"); Serial0.print(FeedbackData.latitude, 6); Serial0.print("#"); Serial0.print(FeedbackData.longtitude, 6); Serial0.print("#"); Serial0.print(FeedbackData.yaw);Serial0.print("#");
+      Serial0.print(FeedbackData.temperature);Serial0.print("#"); Serial0.print(FeedbackData.humidity); Serial0.print("#"); Serial0.print(FeedbackData.pressure); Serial0.print("#"); Serial0.print(cnt); Serial0.print("#"); Serial0.print("10.0"); Serial0.println("#");
       Serial0.flush();
       
     }
@@ -340,6 +384,22 @@ COROUTINE(transmit) {
     COROUTINE_DELAY(60);  
   }
 
+}
+
+COROUTINE(getGPS){
+  COROUTINE_LOOP(){
+    
+    while (Serial1.available() > 0){
+      gps.encode(Serial1.read());
+    }
+
+    if (gps.location.isValid())
+    {
+      FeedbackData.latitude = gps.location.lat();
+      FeedbackData.longtitude = gps.location.lng();
+    }
+    COROUTINE_DELAY(200);
+  }
 }
 
 COROUTINE(getIMUReadings){
@@ -372,6 +432,67 @@ COROUTINE(logToSD){
   }
 }
 
+COROUTINE(buzz){
+  COROUTINE_LOOP(){
+    if (isBuzzing) {
+        digitalWrite(buzzerPin, HIGH);
+        COROUTINE_DELAY(1000);
+        digitalWrite(buzzerPin, LOW);
+        COROUTINE_DELAY(1000);
+    }
+    else {
+      digitalWrite(buzzerPin, LOW);
+    }
+
+    COROUTINE_DELAY(2000);
+  }
+}
+
+COROUTINE(controlServos){
+  COROUTINE_LOOP(){
+
+    if (controllerMode) {
+      servoX.write(servoXYArr[0]);
+      servoY.write(servoXYArr[1]);
+      Serial.println("Controller mode!!");
+      Serial.println(servoXYArr[0]);
+      Serial.println(servoXYArr[1]);
+    }
+    else {
+      servoX.write(90);
+      servoY.write(90);
+      Serial.println("GPS mode!!");
+    }
+    
+          
+
+
+    COROUTINE_DELAY(100);
+  }
+}
+
+COROUTINE(getUV){
+  COROUTINE_LOOP(){
+    if(kSTkErrOk != myUVSensor.setStartState(true))
+      Serial.println("Error starting reading!");
+    
+    // Wait for a bit longer than the conversion time.
+    COROUTINE_DELAY(2+myUVSensor.getConversionTimeMillis());
+
+    // Read UV values.
+    if(kSTkErrOk != myUVSensor.readAllUV())
+      Serial.println("Error reading UV.");
+      
+    FeedbackData.UVA = myUVSensor.getUVA();
+
+    FeedbackData.UVB = myUVSensor.getUVB();
+
+    FeedbackData.UVC = myUVSensor.getUVC();
+
+    COROUTINE_DELAY(2000);
+  }
+}
+
 
 COROUTINE(fetchData){
   COROUTINE_LOOP(){
@@ -381,26 +502,42 @@ COROUTINE(fetchData){
       if(message.charAt(0) == '#'){
         if (message.charAt(1) == '?') {
           Serial0.println("#!#4#");
+          Serial.println("Sync success!");
         }
         else if(message.charAt(1) == 'A'){
           isSending = true;
+          Serial.println("Start send!");
         }
         else if(message.charAt(1) == 'S'){
           isSending = false;
-          Serial0.println("#P#");
+          //Serial0.println("#S!#");
+          Serial.println("Stop send!");
         }
         else if(message.charAt(1) == 'C'){
-          float numbers[2];
-        int startIndex = message.indexOf('#') + 1;
-        int endIndex = message.indexOf('#', startIndex);
+          controllerMode = true;
+          int startIndex = message.indexOf('#') + 3;
+          int endIndex = message.indexOf('#', startIndex);
 
-        numbers[0]=message.substring(startIndex, endIndex).toFloat();
+          servoXYArr[0]=message.substring(startIndex, endIndex).toFloat();
 
-        startIndex = endIndex + 1;
+          startIndex = endIndex + 1;
 
-        endIndex = message.indexOf('#', startIndex);
+          endIndex = message.indexOf('#', startIndex);
 
-        numbers[1]=message.substring(startIndex, endIndex).toFloat();
+          servoXYArr[1]=message.substring(startIndex, endIndex).toFloat();
+          Serial.println("Controller mode!");
+        }
+        else if (message.charAt(1) == 'G') {
+          controllerMode = false;
+          Serial.println("GPS mode!");
+        }
+        else if (message.charAt(1) == 'B') {
+          isBuzzing = true;
+          //Serial.println("Buzzing!");
+        }
+        else if (message.charAt(1) == 'N') {
+          isBuzzing = false;
+          Serial.println("NOT Buzzing!");
         }
         
         
@@ -408,7 +545,7 @@ COROUTINE(fetchData){
 
       
     }
-    COROUTINE_DELAY(300);
+    COROUTINE_DELAY(160);
     
   }
 }
@@ -421,18 +558,12 @@ void loop() {
   getBMEReadings.runCoroutine();
   logToSD.runCoroutine();
   fetchData.runCoroutine();
-//Serial.println(count);
-  /*while (Serial1.available() > 0){
-    gps.encode(Serial1.read());
-  }
+  controlServos.runCoroutine();
+  buzz.runCoroutine();
+  getUV.runCoroutine();
+  getGPS.runCoroutine();
 
-  if (gps.location.isValid())
-  {
-    FeedbackData.latitude = gps.location.lat();
-    FeedbackData.longtitude = gps.location.lng();
-  }
-
-  sensors_event_t temp_event, pressure_event, humidity_event;
+/*  sensors_event_t temp_event, pressure_event, humidity_event;
 
   GetBMEData(&temp_event, &pressure_event, &humidity_event);
 
@@ -473,6 +604,7 @@ void loop() {
 
   //SetServos(GetYaw());
   */
+  
 
 }
 
