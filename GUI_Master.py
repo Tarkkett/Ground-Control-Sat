@@ -287,8 +287,10 @@ class GamepadGUI():
                 if self.gamepad.isControlMode:
                     self.data.control_x = self.gamepad.x
                     self.data.control_y = self.gamepad.y
-                    print(self.data.control_x)
-                    print(self.data.control_y)
+                    self.controlRequest = f"#C#{self.data.control_x}#{self.data.control_y}#"
+                    self.controlRequest.encode()
+                    
+
                 self.barLeftX["value"] = int(self.gamepad.lockLX)
                 self.barLeftY["value"] = int(self.gamepad.lockLY)
                 self.barRightX["value"] = int(self.gamepad.lockRX)

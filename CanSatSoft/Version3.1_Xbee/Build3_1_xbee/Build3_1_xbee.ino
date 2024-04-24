@@ -377,40 +377,36 @@ COROUTINE(fetchData){
   COROUTINE_LOOP(){
     while (Serial0.available() > 0) {
 
-      char incomingByte = Serial0.read();
-
-      if (incomingByte == '\n') {
-        if (strcmp(message, "#?#") == 0) {
-          // Do something here if the received message is "#?#"
-          
+      String message = Serial0.readStringUntil('\n');
+      if(message.charAt(0) == '#'){
+        if (message.charAt(1) == '?') {
           Serial0.println("#!#4#");
-          Serial.println("Sent start msg!");
         }
-        else if(strcmp(message, "#A#") == 0){
+        else if(message.charAt(1) == 'A'){
           isSending = true;
         }
-        else if(strcmp(message, "#S#") == 0){
+        else if(message.charAt(1) == 'S'){
           isSending = false;
           Serial0.println("#P#");
         }
-        
-        message[messageIndex] = '\0';
-        Serial.print("Received message: ");
-        Serial.println(message);
-        Serial0.flush();
-        messageIndex = 0;
-        
-      } 
-      else {
+        else if(message.charAt(1) == 'C'){
+          float numbers[2];
+        int startIndex = message.indexOf('#') + 1;
+        int endIndex = message.indexOf('#', startIndex);
 
-        if (messageIndex < MAX_MESSAGE_LENGTH - 1) {
-          message[messageIndex] = incomingByte;
-          messageIndex++;
+        numbers[0]=message.substring(startIndex, endIndex).toFloat();
+
+        startIndex = endIndex + 1;
+
+        endIndex = message.indexOf('#', startIndex);
+
+        numbers[1]=message.substring(startIndex, endIndex).toFloat();
         }
-        else{
-          Serial.println("Overflow!");
-        }
+        
+        
       }
+
+      
     }
     COROUTINE_DELAY(300);
     
@@ -477,8 +473,7 @@ void loop() {
 
   //SetServos(GetYaw());
   */
-  servoX.write(90);
-  servoY.write(90);
+
 }
 
 void Log(String a, bool send){

@@ -4,6 +4,8 @@ class DataMaster():
         self.sync_ok = "!"
         self.StartStream = "#A#\n"
         self.StopStream = "#S#\n"
+        self.StartController = "#C#\n"
+        self.StopController = "#P#\n"
         self.SyncChannel = 0
         self.control_x = 0
         self.control_y = 0
