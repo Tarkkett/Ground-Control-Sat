@@ -1,27 +1,17 @@
-import tkinter as tk
+import socket
 
-class App:
-    def __init__(self, root):
-        self.root = root
-        self.root.geometry("400x300")
+host, port = "127.0.0.1", 25001
+data = "1,2,3"
 
-        # Create a frame
-        self.frame = tk.Frame(root, bg="gray", width=200, height=200)
-        self.frame.pack(fill="both", expand=True)
+# SOCK_STREAM means TCP socket
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-        # Calculate canvas size based on frame size
-        frame_width = self.frame.winfo_width()
-        frame_height = self.frame.winfo_height()
-        canvas_width = int(frame_width * 0.8)
-        canvas_height = int(frame_height * 0.8)
+try:
+    # Connect to the server and send the data
+    sock.connect((host, port))
+    sock.sendall(data.encode("utf-8"))
+    response = sock.recv(1024).decode("utf-8")
+    print (response)
 
-        # Create a canvas inside the frame
-        self.canvas = tk.Canvas(self.frame, bg="white", width=canvas_width, height=canvas_height)
-        self.canvas.pack(expand=True)
-
-        # Draw a rectangle on the canvas
-        self.canvas.create_rectangle(10, 10, canvas_width - 10, canvas_height - 10, fill="blue")
-
-root = tk.Tk()
-app = App(root)
-root.mainloop()
+finally:
+    sock.close()

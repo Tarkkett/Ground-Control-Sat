@@ -30,7 +30,7 @@ class DataMaster():
         if len(temp) > 0:
             if "#" in temp:
                 self.msg = temp.split("#")
-                print(f"Before removing index: {self.msg}")
+                #print(f"Before removing index: {self.msg}")
                 del self.msg[0]
                 #del self.msg[1]
                 #print(f"After removing index: {self.msg}")

@@ -145,9 +145,10 @@ void setup() {
     InitRadio();
     InitIMU();
     InitGPS();
-    InitServos();
+    //InitServos();
     InitBME();
     InitUV();
+    pinMode(buzzerPin, OUTPUT);
     delay(1000);
     Serial.println("Begin!");
 
@@ -185,8 +186,6 @@ void InitServos(){
   servoX.attach(PIN_A2);
   servoY.attach(PIN_A3);
   Serial.println("Servos reset!");
-
-  pinMode(buzzerPin, OUTPUT);
   
 }
 
@@ -373,15 +372,36 @@ COROUTINE(transmit) {
     //Serial0.print("/");Serial0.print(gps.location.lat(), 6);Serial0.print("/");Serial0.print(gps.location.lng(), 6);Serial0.print("/X::");Serial0.print(MapToFloat(sin(radians(GetBearing(targetLat, targetLon, currentLat, currentLon)) + radians(GetYaw())), 1, -1, 0, 180));Serial0.print("/Y::");Serial0.println(MapToFloat(cos(radians(GetBearing(targetLat, targetLon, currentLat, currentLon)) + radians(GetYaw())), 1, -1, 0, 180));
     if(isSending){
       cnt++;
-      Serial.println("Send DATA!!");
-      Serial0.print("#D#"); Serial0.print(FeedbackData.UVA); Serial0.print("#"); Serial0.print(FeedbackData.latitude, 6); Serial0.print("#"); Serial0.print(FeedbackData.longtitude, 6); Serial0.print("#"); Serial0.print(FeedbackData.yaw);Serial0.print("#");
-      Serial0.print(FeedbackData.temperature);Serial0.print("#"); Serial0.print(FeedbackData.humidity); Serial0.print("#"); Serial0.print(FeedbackData.pressure); Serial0.print("#"); Serial0.print(cnt); Serial0.print("#"); Serial0.print("10.0"); Serial0.println("#");
+      Serial0.print("#D#");
+      Serial0.print(FeedbackData.UVA); 
+      Serial0.print("#"); 
+      Serial0.print(FeedbackData.latitude, 6); 
+      Serial0.print("#"); 
+      Serial0.print(FeedbackData.longtitude, 6); 
+      Serial0.print("#"); 
+      Serial0.print(FeedbackData.yaw);
+      Serial0.print("#"); 
+      Serial0.print(FeedbackData.pitch);
+      Serial0.print("#"); 
+      Serial0.print(FeedbackData.roll);
+      Serial0.print("#");
+      Serial0.print(FeedbackData.temperature);
+      Serial0.print("#"); 
+      Serial0.print(FeedbackData.humidity); 
+      Serial0.print("#"); 
+      Serial0.print(FeedbackData.pressure); 
+      Serial0.print("#"); 
+      Serial0.print(cnt); 
+      Serial0.print("#"); 
+      Serial0.print("10.0"); 
+      Serial0.println("#");
       Serial0.flush();
+      Serial.println("Send DATA!!");
       
     }
 
 
-    COROUTINE_DELAY(60);  
+    COROUTINE_DELAY(150);  
   }
 
 }
@@ -426,7 +446,29 @@ COROUTINE(getBMEReadings){
 
 COROUTINE(logToSD){
   COROUTINE_LOOP(){
-    Serial2.println("Implement");
+    Serial2.print("#D#");
+    Serial2.print(FeedbackData.UVA); 
+    Serial2.print("#"); 
+    Serial2.print(FeedbackData.latitude, 6); 
+    Serial2.print("#"); 
+    Serial2.print(FeedbackData.longtitude, 6); 
+    Serial2.print("#"); 
+    Serial2.print(FeedbackData.yaw);
+    Serial2.print("#"); 
+    Serial2.print(FeedbackData.pitch);
+    Serial2.print("#"); 
+    Serial2.print(FeedbackData.roll);
+    Serial2.print("#");
+    Serial2.print(FeedbackData.temperature);
+    Serial2.print("#"); 
+    Serial2.print(FeedbackData.humidity); 
+    Serial2.print("#"); 
+    Serial2.print(FeedbackData.pressure); 
+    Serial2.print("#"); 
+    Serial2.print(cnt); 
+    Serial2.print("#"); 
+    Serial2.print("10.0"); 
+    Serial2.println("#");
     Serial2.flush();
     COROUTINE_DELAY(500);
   }
@@ -461,7 +503,7 @@ COROUTINE(controlServos){
     else {
       servoX.write(90);
       servoY.write(90);
-      Serial.println("GPS mode!!");
+      //Serial.println("GPS mode!!");
     }
     
           
@@ -499,6 +541,8 @@ COROUTINE(fetchData){
     while (Serial0.available() > 0) {
 
       String message = Serial0.readStringUntil('\n');
+      Serial.print("Got: ");
+      Serial.println(message);
       if(message.charAt(0) == '#'){
         if (message.charAt(1) == '?') {
           Serial0.println("#!#4#");
@@ -529,7 +573,7 @@ COROUTINE(fetchData){
         }
         else if (message.charAt(1) == 'G') {
           controllerMode = false;
-          Serial.println("GPS mode!");
+          //Serial.println("GPS mode!");
         }
         else if (message.charAt(1) == 'B') {
           isBuzzing = true;
@@ -537,7 +581,7 @@ COROUTINE(fetchData){
         }
         else if (message.charAt(1) == 'N') {
           isBuzzing = false;
-          Serial.println("NOT Buzzing!");
+          //Serial.println("NOT Buzzing!");
         }
         
         

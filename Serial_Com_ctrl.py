@@ -1,15 +1,38 @@
 import serial.tools.list_ports
 import time
+import os
+import socket
 
 class SerialCtrl():
     def __init__(self):
         self.com_list = []
         self.sync_cnt = 200
+        
+        self.host = "127.0.0.1"
+        self.port = 25001
+
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+        baseFilename = "Log/DataLog_0.txt"
+        self.fileName = self.open_unique_file(baseFilename)
+        self.file = open(self.fileName, "a")
 
     def getCOMList(self):
         ports = serial.tools.list_ports.comports()
         self.com_list = [com[0] for com in ports]
         self.com_list.insert(0, "-")
+
+    def open_unique_file(self, baseName):
+        if not os.path.exists(baseName):
+            return baseName
+        
+        index = 0
+        while True:
+            new_name = f"Log/DataLog_{index}.txt"
+            if os.path.exists(new_name):
+                index += 1
+            else:
+                return new_name
 
     def SerialOpen(self, gui):
         try:

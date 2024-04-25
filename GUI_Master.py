@@ -31,9 +31,11 @@ class RootGUI:
         print("Closing the main window now!")
         
         self.gamepad.theading = False
+        self.serial.threading = False
         self.root.destroy()
         self.serial.SerialClose(self)
-        self.serial.threading = False
+        
+        sleep(1)
         
         
         
@@ -128,6 +130,7 @@ class ComGUI():
 
             self.map.threading = False
             self.logger.threading = False
+            self.serial.file.close()
             self.serial.SerialClose(self)
             self.logger.LoggerGUIClose()
             self.conn.ConnGUIClose()
@@ -169,7 +172,7 @@ class LoggerGUI():
 
         self.threading = True
 
-        self.loggerThread = threading.Thread(target=self.PullLog, name="Log thread", daemon=True)
+        self.loggerThread = threading.Thread(target=self.PullLog, name="LogThread", daemon=True)
         self.loggerThread.start()
         self.LoggerGUIOpen()
     
@@ -210,25 +213,31 @@ class MapGUI():
         self.mapSizeX = 60
         self.mapSizeY = 60
 
+        self.address = "Vilnius"
+
         self.font = mainFont
-        self.markerList = [(60.0,50.0)]
+        self.markerList = []
 
         self.currentX = 0
         self.currentY = 0
-        self.tuple = (12.0, 12.0)
+        self.tuple = (0.0, 0.0)
         
+        
+
         self.frame = LabelFrame(root, text="Map frame", padx=5, pady=5, bg="gray", relief="ridge")
         
         self.map_widget = tkintermapview.TkinterMapView(self.frame, width=800, height=380, corner_radius=20)
         self.map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom=22)
         self.zoomLevel = Label(self.frame, text= f"Zoom level: {self.map_widget.last_zoom}x", padx=5, pady=5, bg="gray", font=self.font)
 
-        self.mapThread = threading.Thread(target = self.UpdateMap, name="Map Thread", daemon=True)
+        self.MapGUIOpen()
+
+        self.mapThread = threading.Thread(target = self.UpdateMap, name="MapThread", daemon=True)
         self.mapThread.start()
         print("Started thread!")
 
         #messagebox.showwarning("Warning!", "Should place!")
-        self.MapGUIOpen()
+        
 
     def MapGUIOpen(self):
         self.root.geometry("1280x720")
@@ -239,25 +248,30 @@ class MapGUI():
         self.map_widget.grid(row=0, column=0)
         self.map_widget.set_address("Moletu aerodromas", marker=True)
         self.map_widget.set_zoom(18)
+        self.initialMarker = self.map_widget.set_marker(54.687157, 25.279652)
         
 
     def UpdateMap(self):
         
+        self.markerList.append(self.initialMarker.position)
         while self.threading:
-            sleep(10)
-            print("OK!")
+            sleep(1)
             if self.data.data_ok:
+                if self.data.parsedMsg[1] != 0.0:
                 
-                self.currentX = float(self.data.parsedMsg[1])
-                self.currentY = float(self.data.parsedMsg[2])
-                self.tuple = (self.currentX, self.currentY)
-                print(self.tuple)
+                    self.currentX = float(self.data.parsedMsg[1])
+                    self.currentY = float(self.data.parsedMsg[2])
+                    self.tuple = (self.currentX, self.currentY)
+                    print(self.tuple)
+                        
+                    self.markerList.append(self.tuple)
+                    if len(self.markerList) > 20:
+                        del self.markerList[0]
+                    print(len(self.markerList))
+                    self.map_widget.set_path(self.markerList)
+                    self.zoomLevel["text"] = f"Zoom level: {self.map_widget.zoom}x"
                     
-                self.markerList.append(self.tuple)
-                self.map_widget.set_path(self.markerList)
-                self.zoomLevel["text"] = f"Zoom level: {self.map_widget.zoom}x"
-                
-                self.map_widget.update()
+                    #self.map_widget.update()
             #self.infoLabel["text"] = f"Info: {self.map_widget.info}"
     
     def MapGUIClose(self):
@@ -441,24 +455,40 @@ class ConnGUI():
         print("Changed to false!")
 
     def save_data(self):
-        self.f = open("flight_data.txt", "a")
         self.threading = True
         t1 = threading.Thread(target=self.writeToFile, daemon=True)
         t1.start()
 
     def writeToFile(self):
+        self.serial.sock.connect((self.serial.host, self.serial.port))
         while self.threading: 
+
             if self.SaveVar.get() == 1:
                 if self.data.data_ok:
-                    self.f.write(str(self.data.parsedMsg) + "\n")
-                    print("Wrote!")
-                else:
-                    print("Data not ok!")
+                    
+                    try:
+                        self.serial.file.write(str(self.data.parsedMsg) + "\n")
+                        print("Logged!")
+                    except:
+                        self.serial.file.close()
+
+                    try:
+                        print ("OK?")
+                        # Connect to the server and send the data
+                        self.rotation = f"({self.data.parsedMsg[3]},{self.data.parsedMsg[4]},{self.data.parsedMsg[5]})"
+                        self.serial.sock.sendall(self.rotation.encode("utf-8"))
+                        response = self.serial.sock.recv(1024).decode("utf-8")
+                        print(response)
+                        print(self.rotation)
+
+                    except Exception as e:
+                        print(e)
+
             else:
                 print("Toggle off!")
                 print(self.SaveVar.get())
-            sleep(0.1)
-        self.f.close()
+            sleep(0.05)
+
 
 
     def new_chart(self):
