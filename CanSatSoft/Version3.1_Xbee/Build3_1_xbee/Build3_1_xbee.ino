@@ -1,3 +1,11 @@
+#include <Adafruit_BNO08x.h>
+#include <sh2.h>
+#include <sh2_SensorValue.h>
+#include <sh2_err.h>
+#include <sh2_hal.h>
+#include <sh2_util.h>
+#include <shtp.h>
+
 #include <Arduino.h>
 #include <ESP32Servo.h>
 #include <Wire.h>
@@ -391,6 +399,8 @@ COROUTINE(transmit) {
       Serial0.print("#"); 
       Serial0.print(FeedbackData.pressure); 
       Serial0.print("#"); 
+      Serial0.print(FeedbackData.altitude); 
+      Serial0.print("#"); 
       Serial0.print(cnt); 
       Serial0.print("#"); 
       Serial0.print("10.0"); 
@@ -440,6 +450,8 @@ COROUTINE(getBMEReadings){
     FeedbackData.temperature = temp_event.temperature;
     FeedbackData.pressure = pressure_event.pressure;
     FeedbackData.humidity = humidity_event.relative_humidity;
+    FeedbackData.altitude = bme.readAltitude(1020);
+    
     COROUTINE_DELAY(400);
   }
 }

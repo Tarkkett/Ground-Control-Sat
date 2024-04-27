@@ -475,7 +475,7 @@ class ConnGUI():
                     try:
                         print ("OK?")
                         # Connect to the server and send the data
-                        self.rotation = f"({self.data.parsedMsg[3]},{self.data.parsedMsg[4]},{self.data.parsedMsg[5]})"
+                        self.rotation = f"({self.data.parsedMsg[3]},{self.data.parsedMsg[4]},{self.data.parsedMsg[5]},{self.data.parsedMsg[1]},{self.data.parsedMsg[2]},{self.data.parsedMsg[9]})"
                         self.serial.sock.sendall(self.rotation.encode("utf-8"))
                         response = self.serial.sock.recv(1024).decode("utf-8")
                         print(response)
@@ -487,7 +487,7 @@ class ConnGUI():
             else:
                 print("Toggle off!")
                 print(self.SaveVar.get())
-            sleep(0.05)
+            sleep(0.01)
 
 
 
