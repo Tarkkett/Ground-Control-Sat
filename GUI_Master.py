@@ -8,6 +8,8 @@ from time import sleep
 import matplotlib.pyplot as plt
 import tkintermapview
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import socket
+
 
 from functools import partial
 
@@ -163,7 +165,7 @@ class LoggerGUI():
         self.serial = serial
 
         self.frame = LabelFrame(root, text="Data Logger", padx=5, pady=5, bg="gray")
-        self.dataCanvas = Canvas(self.frame, width=600, height=280, background="black", highlightbackground="black")
+        self.dataCanvas = Canvas(self.frame, width=600, height=265, background="black", highlightbackground="black")
         self.vsb = Scrollbar(self.frame, orient='vertical', command=self.dataCanvas.yview)
 
         self.dataFrame = Frame(self.dataCanvas, bg="black", pady=5)
@@ -456,24 +458,38 @@ class ConnGUI():
 
     def save_data(self):
         self.threading = True
-        t1 = threading.Thread(target=self.writeToFile, daemon=True)
-        t1.start()
+        if self.SaveVar.get() == 1:
+            t1 = threading.Thread(target=self.writeToFile, daemon=True)
+            t1.start()
+            self.threading = True
+        else:
+            self.threading = False
+            self.serial.sock.close()
 
     def writeToFile(self):
-        self.serial.sock.connect((self.serial.host, self.serial.port))
-        while self.threading: 
 
+
+        while self.threading: 
+            
+            try:
+                print("Tried!!!!!!!!!!!!!!!")
+                self.serial.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                self.serial.sock.connect((self.serial.host, self.serial.port))
+            
+            except Exception as e:
+                print("========================")
+                print(e)
             if self.SaveVar.get() == 1:
                 if self.data.data_ok:
                     
                     try:
                         self.serial.file.write(str(self.data.parsedMsg) + "\n")
-                        print("Logged!")
+
                     except:
                         self.serial.file.close()
 
                     try:
-                        print ("OK?")
+
                         # Connect to the server and send the data
                         self.rotation = f"({self.data.parsedMsg[3]},{self.data.parsedMsg[4]},{self.data.parsedMsg[5]},{self.data.parsedMsg[1]},{self.data.parsedMsg[2]},{self.data.parsedMsg[9]})"
                         self.serial.sock.sendall(self.rotation.encode("utf-8"))
