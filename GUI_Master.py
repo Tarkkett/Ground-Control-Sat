@@ -454,7 +454,6 @@ class ConnGUI():
         self.serial.threading = False
         sleep(1)
         self.data.data_ok = False
-        print("Changed to false!")
 
     def save_data(self):
         self.threading = True
@@ -472,12 +471,10 @@ class ConnGUI():
         while self.threading: 
             
             try:
-                print("Tried!!!!!!!!!!!!!!!")
                 self.serial.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 self.serial.sock.connect((self.serial.host, self.serial.port))
             
             except Exception as e:
-                print("========================")
                 print(e)
             if self.SaveVar.get() == 1:
                 if self.data.data_ok:

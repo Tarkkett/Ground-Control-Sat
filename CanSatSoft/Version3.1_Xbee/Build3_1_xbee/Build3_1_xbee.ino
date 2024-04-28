@@ -26,6 +26,8 @@ Adafruit_BME280 bme; // use I2C interface
 Adafruit_Sensor *bme_temp = bme.getTemperatureSensor();
 Adafruit_Sensor *bme_pressure = bme.getPressureSensor();
 Adafruit_Sensor *bme_humidity = bme.getHumiditySensor();
+float zeroPointAltitude = 0;
+float atmPressure = 1024;
 
 //buzzer=pin=6
 #define buzzerPin 6 
@@ -153,7 +155,7 @@ void setup() {
     InitRadio();
     InitIMU();
     InitGPS();
-    //InitServos();
+    InitServos();
     InitBME();
     InitUV();
     pinMode(buzzerPin, OUTPUT);
@@ -236,6 +238,7 @@ void InitBME(){
   bme_temp->printSensorDetails();
   bme_pressure->printSensorDetails();
   bme_humidity->printSensorDetails();
+  zeroPointAltitude = bme.readAltitude(atmPressure);
   Serial.println("BME sensors init() success!");
 }
 
@@ -399,7 +402,9 @@ COROUTINE(transmit) {
       Serial0.print("#"); 
       Serial0.print(FeedbackData.pressure); 
       Serial0.print("#"); 
-      Serial0.print(FeedbackData.altitude); 
+      Serial0.print(FeedbackData.altitude);
+      Serial0.print("#"); 
+      Serial0.print(FeedbackData.altitude - zeroPointAltitude);
       Serial0.print("#"); 
       Serial0.print(cnt); 
       Serial0.print("#"); 
@@ -450,7 +455,7 @@ COROUTINE(getBMEReadings){
     FeedbackData.temperature = temp_event.temperature;
     FeedbackData.pressure = pressure_event.pressure;
     FeedbackData.humidity = humidity_event.relative_humidity;
-    FeedbackData.altitude = bme.readAltitude(1020);
+    FeedbackData.altitude = bme.readAltitude(atmPressure);
     
     COROUTINE_DELAY(400);
   }
@@ -472,8 +477,8 @@ COROUTINE(logToSD){
     Serial2.print(FeedbackData.roll);
     Serial2.print("#");
     Serial2.print(FeedbackData.temperature);
-    Serial2.print("#"); 
-    Serial2.print(FeedbackData.humidity); 
+    Serial2.print("#");
+    Serial2.print(FeedbackData.humidity);
     Serial2.print("#"); 
     Serial2.print(FeedbackData.pressure); 
     Serial2.print("#"); 
