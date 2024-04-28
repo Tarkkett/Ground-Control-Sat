@@ -57,8 +57,10 @@ class GamepadCtrl:
 
                     #axes = joystick.get_numaxes()
                     if self.threading:
-                        self.x = self.map_value(joystick.get_axis(0))     
-                        self.y = self.map_value(-joystick.get_axis(1))
+                        self.x = joystick.get_axis(1)    
+
+                        self.y = joystick.get_axis(2)
+
                         self.lockLX = self.map_value(joystick.get_axis(0))
                         self.lockLY = self.map_value(-joystick.get_axis(1))
                         self.lockRX = self.map_value(joystick.get_axis(2))

@@ -326,18 +326,16 @@ class GamepadGUI():
             try:
                 sleep(0.1)
                 if self.gamepad.isControlMode:
-                    self.data.control_x = int(self.gamepad.x)
-                    self.data.control_y = int(self.gamepad.y)
+                    self.data.control_x = self.gamepad.x
+                    self.data.control_y = self.gamepad.y
                     self.controlRequest = f"#C#{self.data.control_x}#{self.data.control_y}#\n"
                     
                     self.serial.ser.write(self.controlRequest.encode())
-                    print(f"Sent!-> {self.controlRequest}")
                 else:
                     self.serial.ser.write(self.data.GPSModeCommand.encode())
                 
                 if self.gamepad.isBuzzing:
                     self.serial.ser.write(self.data.BuzzCommand.encode())
-                    print("This!")
                 else:
                     self.serial.ser.write(self.data.StopBuzzCommand.encode())
                     
