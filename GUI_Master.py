@@ -115,6 +115,7 @@ class ComGUI():
                 self.logger = LoggerGUI(self.root, self.data, self.serial)
                 self.map = MapGUI(self.root, self.mainFont, self.data)
                 self.conn = ConnGUI(self.root, self.serial, self.data, self.mainFont, self.logger)
+                self.controls = ControlsGUI(self.root, self.serial)
 
                 self.serial.t1 = threading.Thread(
                     target = self.serial.SerialSync, args = (self,), daemon=True
@@ -226,7 +227,7 @@ class MapGUI():
         
         
 
-        self.frame = LabelFrame(root, text="Map frame", padx=5, pady=5, bg="gray", relief="ridge")
+        self.frame = LabelFrame(self.root, text="Map frame", padx=5, pady=5, bg="gray", relief="ridge")
         
         self.map_widget = tkintermapview.TkinterMapView(self.frame, width=800, height=380, corner_radius=20)
         self.map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom=22)
@@ -374,6 +375,50 @@ class GamepadGUI():
         self.frame.destroy()
         self.root.geometry("360x120")
 
+class ControlsGUI():
+    def __init__(self, root, serial):
+        self.root = root
+        self.serial = serial
+
+        self.textLoc = 'empty'
+
+        self.frame = LabelFrame(self.root, text="Server manager", bg="gray", padx=5, pady=5)
+        self.portLocName = Label(self.frame, text="Localizer port:", bg="gray")
+        self.portDatName = Label(self.frame, text="Visualizer port:", bg="gray")
+        self.portLocConnect = Button(self.frame, text="Prisijungti!", bg="gray", command=self.button_mode_loc)
+        self.portDatConnect = Button(self.frame, text="Prisijungti!", bg="gray")
+        self.locPortEntry = Entry(self.frame, textvariable=self.textLoc)
+        self.datPortEntry = Entry(self.frame)
+        self.is_on = False
+        self.OpenControlsFrame()
+
+    def OpenControlsFrame(self):
+        self.frame.grid(row=0, column=30, padx=5, pady=5, sticky=NW)
+        self.portLocName.grid(row=0, column=0)
+        self.portDatName.grid(row=1, column=0)
+
+        self.locPortEntry.grid(row=0, column=1)
+        self.datPortEntry.grid(row=1, column=1)
+
+        self.portLocConnect.grid(row=0, column=2)
+        self.portDatConnect.grid(row=1, column=2)
+
+    
+    def button_mode_loc(self):
+
+        # Determine it is on or off
+        if self.is_on:
+            print("OFF")
+            self.portLocConnect["text"] = "Prisijungti!"
+
+            self.is_on = False
+        else:
+            
+            print("ON!!!")
+            self.portInput = self.textLoc
+            print(self.locPortEntry.get())
+            self.portLocConnect["text"] = "Atsijungti!"
+            self.is_on = True
 
 class ConnGUI():
     def __init__(self, root, serial, data, mainFont, logger):
@@ -467,37 +512,38 @@ class ConnGUI():
 
 
         while self.threading: 
-            
+            print(f"logging {self.SaveVar.get()}")
             try:
                 self.serial.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 self.serial.sock.connect((self.serial.host, self.serial.port))
+                
             
             except Exception as e:
                 print(e)
-            if self.SaveVar.get() == 1:
-                if self.data.data_ok:
-                    
-                    try:
-                        self.serial.file.write(str(self.data.parsedMsg) + "\n")
 
-                    except:
-                        self.serial.file.close()
+            print("Toggle on!")
+            if self.data.data_ok:
+                
+                try:
+                    print("Writing")
+                    self.serial.file.write(str(self.data.parsedMsg) + "\n")
 
-                    try:
+                except:
+                    self.serial.file.close()
 
-                        # Connect to the server and send the data
-                        self.rotation = f"({self.data.parsedMsg[3]},{self.data.parsedMsg[4]},{self.data.parsedMsg[5]},{self.data.parsedMsg[1]},{self.data.parsedMsg[2]},{self.data.parsedMsg[9]})"
-                        self.serial.sock.sendall(self.rotation.encode("utf-8"))
-                        response = self.serial.sock.recv(1024).decode("utf-8")
-                        print(response)
-                        print(self.rotation)
+                # try:
 
-                    except Exception as e:
-                        print(e)
+                #     # Connect to the server and send the data
+                #     self.rotation = f"({self.data.parsedMsg[3]},{self.data.parsedMsg[4]},{self.data.parsedMsg[5]},{self.data.parsedMsg[1]},{self.data.parsedMsg[2]})"
+                #     self.serial.sock.sendall(self.rotation.encode("utf-8"))
+                #     response = self.serial.sock.recv(1024).decode("utf-8")
+                #     print(response)
+                #     print(self.rotation)
 
-            else:
-                print("Toggle off!")
-                print(self.SaveVar.get())
+                # except Exception as e:
+                #     print("Error!!!!!!!")
+                #     print(e)
+
             sleep(0.01)
 
 
@@ -673,5 +719,6 @@ if __name__ == "__name__":
     ConnGUI()
     GamepadGUI()
     LoggerGUI()
+    ControlsGUI()
     MapGUI()
     DisGUI()
