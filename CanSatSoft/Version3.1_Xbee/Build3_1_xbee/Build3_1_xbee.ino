@@ -251,12 +251,9 @@ float GetBearing(float lat1, float lon1, float lat2, float lon2){
 
     delta_lon = lon1 - lon2;
     delta_lat = lat1 - lat2;
-    /*theta = atan2(sin(delta_lon * 57296 / 1000) * cos(lat2 * 57296 / 1000),
-                       cos(lat1 * 57296 / 1000) * sin(lat2 * 57296 / 1000) - 
-                       sin(lat1 * 57296 / 1000) * cos(lat2 * 57296 / 1000) * 
-                       cos(radians(delta_lon)));*/
+
     bearing = atan2(delta_lon, delta_lat);
-    //bearing = theta * 57296 / 1000;
+
     return bearing;
 }
 

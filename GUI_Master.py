@@ -13,6 +13,9 @@ import socket
 
 from functools import partial
 
+HOST = "127.0.0.1"  # Standard loopback interface address (localhost)
+PORT = 65432  # Port to listen on (non-privileged ports are > 1023)
+
 class RootGUI:
     def __init__(self, serial, data, gamepad):
         self.root = Tk()
@@ -115,7 +118,7 @@ class ComGUI():
                 self.logger = LoggerGUI(self.root, self.data, self.serial)
                 self.map = MapGUI(self.root, self.mainFont, self.data)
                 self.conn = ConnGUI(self.root, self.serial, self.data, self.mainFont, self.logger)
-                self.controls = ControlsGUI(self.root, self.serial)
+                self.controls = ControlsGUI(self.root, self.serial, self.data)
 
                 self.serial.t1 = threading.Thread(
                     target = self.serial.SerialSync, args = (self,), daemon=True
@@ -376,49 +379,149 @@ class GamepadGUI():
         self.root.geometry("360x120")
 
 class ControlsGUI():
-    def __init__(self, root, serial):
+    def __init__(self, root, serial, data):
+
         self.root = root
         self.serial = serial
-
-        self.textLoc = 'empty'
+        self.data = data
 
         self.frame = LabelFrame(self.root, text="Server manager", bg="gray", padx=5, pady=5)
         self.portLocName = Label(self.frame, text="Localizer port:", bg="gray")
-        self.portDatName = Label(self.frame, text="Visualizer port:", bg="gray")
-        self.portLocConnect = Button(self.frame, text="Prisijungti!", bg="gray", command=self.button_mode_loc)
-        self.portDatConnect = Button(self.frame, text="Prisijungti!", bg="gray")
-        self.locPortEntry = Entry(self.frame, textvariable=self.textLoc)
-        self.datPortEntry = Entry(self.frame)
-        self.is_on = False
+        self.portWebName = Label(self.frame, text="Visualizer port:", bg="gray")
+        #self.portLocButton = Button(self.frame, text="Prisijungti!", bg="gray", command=self.button_mode_loc)
+        self.portWebButton = Button(self.frame, text="Prisijungti!", bg="gray", command=self.button_mode_web)
+        self.locPortEntry = Entry(self.frame)
+        self.webPortEntry = Entry(self.frame)
+
+        self.is_loc_on = False
+        self.is_web_on = False
+
         self.OpenControlsFrame()
 
     def OpenControlsFrame(self):
         self.frame.grid(row=0, column=30, padx=5, pady=5, sticky=NW)
         self.portLocName.grid(row=0, column=0)
-        self.portDatName.grid(row=1, column=0)
+        self.portWebName.grid(row=1, column=0)
 
         self.locPortEntry.grid(row=0, column=1)
-        self.datPortEntry.grid(row=1, column=1)
+        self.webPortEntry.grid(row=1, column=1)
 
-        self.portLocConnect.grid(row=0, column=2)
-        self.portDatConnect.grid(row=1, column=2)
+        #self.portLocButton.grid(row=0, column=2, padx=5, pady=5)
+        self.portWebButton.grid(row=1, column=2, padx=5, pady=5)
 
-    
-    def button_mode_loc(self):
+        self.webThread = threading.Thread(target=self.SendWebSerialData, name="Web", daemon=True)
+        #self.locThread = threading.Thread(target=self.SendLocSerialData, name="Localizer", daemon=True)
 
-        # Determine it is on or off
-        if self.is_on:
-            print("OFF")
-            self.portLocConnect["text"] = "Prisijungti!"
+        self.webThreading = False
+        
 
-            self.is_on = False
+
+    def button_mode_web(self):
+
+        if self.is_web_on:
+
+            try:
+                self.serial.web_sock.close()
+                self.portWebButton["text"] = "Prisijungti!"
+                self.is_web_on = False
+                #self.webThreading = False
+            except Exception as e:
+                messagebox.showerror("Klaida išjungiant thread!", e)
         else:
+            self.webPortEntered = self.webPortEntry.get()
+            if self.webPortEntered:
+                if self.webPortEntered.isdigit():
+                    try:
+                        self.serial.web_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                        self.serial.web_sock.connect((HOST, int(self.webPortEntry.get())))
+                        self.portWebButton["text"] = "Atsijungti!"
+                        self.is_web_on = True
+                        self.webThreading = True
+                        if not self.webThread.is_alive():
+                            self.webThread.start()
+                        print("reached true section")
+                        
+                    except Exception as e:
+                        messagebox.showerror("Klaida paleidžiant thread!", e)
+                else:
+                    print("NAN")
+            else:
+                print("Empty field")
+
+    # def button_mode_loc(self):
+
+        
+        
+    #     if self.is_loc_on:
+    #         print("OFF")
+    #         try:
+    #             self.serial.loc_sock.close()
+    #             self.portLocButton["text"] = "Prisijungti!"
+    #             self.is_loc_on = False
+    #             self.localizerThreading = False
+    #         except Exception as e:
+    #             messagebox.showerror("Klaida išjungiant thread!", e)
+    #     else:
+    #         self.locPortEntered = self.locPortEntry.get()
+    #         if self.locPortEntered:
+    #             if self.locPortEntered.isdigit():
+    #                 try:
+    #                     self.serial.loc_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    #                     self.serial.loc_sock.connect((self.serial.host, int(self.locPortEntry.get())))
+    #                     self.portLocButton["text"] = "Atsijungti!"
+    #                     self.is_loc_on = True
+    #                     self.localizerThreading = True
+    #                     if not self.locThread.is_alive():
+    #                         self.locThread.start()
+                        
+    #                 except Exception as e:
+    #                     messagebox.showerror("Klaida paleidžiant thread!", e)
+    #             else:
+    #                 print("NAN")
+    #         else:
+    #             print("Empty field")
+
+    # def SendLocSerialData(self):
+    #     while self.localizerThreading:
+    #         sleep(0.01)
+    #         try:
+    #             if self.data.data_ok:
+    #                 self.rotation = f"({self.data.parsedMsg[3]},{self.data.parsedMsg[4]},{self.data.parsedMsg[5]},{self.data.parsedMsg[1]},{self.data.parsedMsg[2]},{self.data.parsedMsg[9]})"
+    #                 self.serial.loc_sock.sendall(self.rotation.encode("utf-8"))
+    #                 response = self.serial.loc_sock.recv(1024).decode("utf-8")
+    #                 print(response)
+    #                 print(self.rotation)
+
+    #         except Exception as e:
+    #             try: 
+    #                 self.serial.loc_sock.close()
+    #             except Exception as x:
+    #                 messagebox.showerror("Klaida!", x)
+                    
+    #             messagebox.showerror("Klaida!", e)
+    #             self.localizerThreading = False
+    #             self.is_loc_on = False
+    #             self.portLocButton["text"] = "Prisijungti!"
+
+    def SendWebSerialData(self):
+        print("Aha")
+        while self.webThreading == True:
+            sleep(1)
             
-            print("ON!!!")
-            self.portInput = self.textLoc
-            print(self.locPortEntry.get())
-            self.portLocConnect["text"] = "Atsijungti!"
-            self.is_on = True
+            if self.data.data_ok:
+                print("sending Hello")
+                self.fullMsg = f"({self.data.parsedMsg[6]},{self.data.parsedMsg[7]})"
+                # f("{self.data.parsedMsg[6]}")
+                try:
+                    self.serial.web_sock.sendall(self.fullMsg.encode("utf-8"))
+
+                    print(self.fullMsg)
+                except Exception as e:
+                    print(e)
+            else:
+                print("Data not ok")
+
+
 
 class ConnGUI():
     def __init__(self, root, serial, data, mainFont, logger):
@@ -457,7 +560,9 @@ class ConnGUI():
         self.chartMaster = DisGUI(self.root, self.serial, self.data, self.logger)
 
     def ConnGUIOpen(self):
-        self.root.geometry('1280x720')
+        self.root.geometry('2560x420')
+        self.root.wm_attributes("-topmost", True)
+        # self.root.wm_attributes("-y", self.root.winfo_screenheight() - self.root.winfo_reqheight())
 
         # Conn frame
         self.frame.grid(row=0,column=3, rowspan=3, columnspan=3, padx=5, pady=5, sticky=NW)
@@ -501,48 +606,28 @@ class ConnGUI():
     def save_data(self):
         self.threading = True
         if self.SaveVar.get() == 1:
+            self.serial.generate_file()
             t1 = threading.Thread(target=self.writeToFile, daemon=True)
             t1.start()
             self.threading = True
         else:
             self.threading = False
-            self.serial.sock.close()
+            self.serial.file.close()
+            print("Closed")
 
     def writeToFile(self):
 
 
         while self.threading: 
-            print(f"logging {self.SaveVar.get()}")
-            try:
-                self.serial.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                self.serial.sock.connect((self.serial.host, self.serial.port))
-                
-            
-            except Exception as e:
-                print(e)
 
-            print("Toggle on!")
             if self.data.data_ok:
                 
                 try:
-                    print("Writing")
                     self.serial.file.write(str(self.data.parsedMsg) + "\n")
 
-                except:
-                    self.serial.file.close()
-
-                # try:
-
-                #     # Connect to the server and send the data
-                #     self.rotation = f"({self.data.parsedMsg[3]},{self.data.parsedMsg[4]},{self.data.parsedMsg[5]},{self.data.parsedMsg[1]},{self.data.parsedMsg[2]})"
-                #     self.serial.sock.sendall(self.rotation.encode("utf-8"))
-                #     response = self.serial.sock.recv(1024).decode("utf-8")
-                #     print(response)
-                #     print(self.rotation)
-
-                # except Exception as e:
-                #     print("Error!!!!!!!")
-                #     print(e)
+                except Exception as e:
+                    print(e)
+                    sleep(2)
 
             sleep(0.01)
 

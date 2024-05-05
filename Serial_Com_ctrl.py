@@ -2,6 +2,7 @@ import serial.tools.list_ports
 import time
 import os
 import socket
+from datetime import datetime
 
 class SerialCtrl():
     def __init__(self):
@@ -11,11 +12,16 @@ class SerialCtrl():
         self.host = "127.0.0.1"
         self.port = 25001
 
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.loc_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.web_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-        baseFilename = "Log/DataLog_0.txt"
-        self.fileName = self.open_unique_file(baseFilename)
+        self.baseFilename = "Log/DataLog_0.txt"
+        
+
+    def generate_file(self):
+        self.fileName = self.open_unique_file(self.baseFilename)
         self.file = open(self.fileName, "a")
+        self.file.write("Magnificansat Log -> " + str(datetime.now()) + "\n")
 
     def getCOMList(self):
         ports = serial.tools.list_ports.comports()
