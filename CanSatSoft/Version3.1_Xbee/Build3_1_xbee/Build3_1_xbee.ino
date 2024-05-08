@@ -400,13 +400,10 @@ COROUTINE(transmit) {
     //Serial0.print(GetYaw());Serial0.print("/");Serial0.print(temp_event.temperature);Serial0.print("/");Serial0.print(pressure_event.pressure);Serial0.print("/");Serial0.print(humidity_event.relative_humidity);Serial0.print("/");Serial0.print(MapToFloat(sin(0 + radians(GetYaw())), -1, 1, 0, 180));Serial0.print("/");Serial0.print(degrees(GetBearing(targetLat, targetLon, currentLat, currentLon)));//Serial0.print("/");Serial0.println(gps.satellites.value());
     //Serial0.print("/");Serial0.print(gps.location.lat(), 6);Serial0.print("/");Serial0.print(gps.location.lng(), 6);Serial0.print("/X::");Serial0.print(MapToFloat(sin(radians(GetBearing(targetLat, targetLon, currentLat, currentLon)) + radians(GetYaw())), 1, -1, 0, 180));Serial0.print("/Y::");Serial0.println(MapToFloat(cos(radians(GetBearing(targetLat, targetLon, currentLat, currentLon)) + radians(GetYaw())), 1, -1, 0, 180));
     if(isSending){
-      cnt++;
       Serial0.print("#D#");
-      Serial0.print(FeedbackData.UVA); 
+      Serial0.print(FeedbackData.latitude, 6);
       Serial0.print("#"); 
-      Serial0.print(FeedbackData.latitude, 6); 
-      Serial0.print("#"); 
-      Serial0.print(FeedbackData.longtitude, 6); 
+      Serial0.print(FeedbackData.longtitude, 6);
       Serial0.print("#"); 
       Serial0.print(FeedbackData.yaw);
       Serial0.print("#"); 
@@ -416,14 +413,20 @@ COROUTINE(transmit) {
       Serial0.print("#");
       Serial0.print(FeedbackData.temperature);
       Serial0.print("#"); 
-      Serial0.print(FeedbackData.humidity); 
+      Serial0.print(FeedbackData.humidity);
       Serial0.print("#"); 
-      Serial0.print(FeedbackData.pressure); 
+      Serial0.print(FeedbackData.pressure);
       Serial0.print("#"); 
       Serial0.print(FeedbackData.altitude);
       Serial0.print("#"); 
       Serial0.print(FeedbackData.altitude - zeroPointAltitude);
-      Serial0.print("#"); 
+      Serial0.print("#");
+      Serial0.print(FeedbackData.UVA); 
+      Serial0.print("#");
+      Serial0.print(FeedbackData.UVB);
+      Serial0.print("#");
+      Serial0.print(FeedbackData.UVC); 
+      Serial0.print("#");
       Serial0.print(verticalSpeed); 
       Serial0.print("#"); 
       Serial0.print(horizontalSpeed); 
@@ -431,8 +434,6 @@ COROUTINE(transmit) {
       Serial0.print("10.0"); 
       Serial0.println("#");
       Serial0.flush();
-      Serial.println("Send DATA!!");
-      
     }
 
 
@@ -658,14 +659,18 @@ COROUTINE(fetchData){
   COROUTINE_LOOP(){
     while (Serial0.available() > 0) {
 
+      //Gautos žinutės apdorojimas
       String message = Serial0.readStringUntil('\n');
       Serial.print("Got: ");
       Serial.println(message);
       if(message.charAt(0) == '#'){
+
+        //Autorizuojamas žemės stoties prisijungimas
         if (message.charAt(1) == '?') {
           Serial0.println("#!#4#");
           Serial.println("Sync success!");
         }
+        //Pradedam/sustabdom duomenų siuntimą
         else if(message.charAt(1) == 'A'){
           isSending = true;
           Serial.println("Start send!");
@@ -675,6 +680,7 @@ COROUTINE(fetchData){
           //Serial0.println("#S!#");
           Serial.println("Stop send!");
         }
+        //Nuskaitomi: valdymo rėžimas ir valdymo pulto duomenys 
         else if(message.charAt(1) == 'C'){
           controllerMode = true;
           int startIndex = message.indexOf('#') + 3;
@@ -693,6 +699,7 @@ COROUTINE(fetchData){
           controllerMode = false;
           //Serial.println("GPS mode!");
         }
+        //Pradedame/sustabdome pypsėjimą
         else if (message.charAt(1) == 'B') {
           isBuzzing = true;
           //Serial.println("Buzzing!");
@@ -701,20 +708,18 @@ COROUTINE(fetchData){
           isBuzzing = false;
           //Serial.println("NOT Buzzing!");
         }
-        
-        
       }
-
-      
     }
+    //Palaukiame(Šis delay neužrakina pagrindinio Thread), nes
+    //nenorime užtvindyti radijo modulio Buffer'io
     COROUTINE_DELAY(160);
-    
   }
 }
 
 
 void loop() {
 
+  //Užduotys vadinasi Coroutines
   transmit.runCoroutine();
   getIMUReadings.runCoroutine();
   getBMEReadings.runCoroutine();
@@ -725,8 +730,6 @@ void loop() {
   getUV.runCoroutine();
   getGPS.runCoroutine();
   getSpeed.runCoroutine();
-
-  
 
 }
 

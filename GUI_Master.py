@@ -13,8 +13,8 @@ import socket
 
 from functools import partial
 
-HOST = "127.0.0.1"  # Standard loopback interface address (localhost)
-PORT = 65432  # Port to listen on (non-privileged ports are > 1023)
+HOST = "127.0.0.1"
+PORT = 65432
 
 class RootGUI:
     def __init__(self, serial, data, gamepad):
@@ -263,10 +263,10 @@ class MapGUI():
         while self.threading:
             sleep(1)
             if self.data.data_ok:
-                if self.data.parsedMsg[1] != 0.0:
+                if self.data.parsedMsg[0] != 0.0:
                 
-                    self.currentX = float(self.data.parsedMsg[1])
-                    self.currentY = float(self.data.parsedMsg[2])
+                    self.currentX = float(self.data.parsedMsg[0])
+                    self.currentY = float(self.data.parsedMsg[1])
                     self.tuple = (self.currentX, self.currentY)
                     print(self.tuple)
                         
@@ -388,7 +388,7 @@ class ControlsGUI():
         self.frame = LabelFrame(self.root, text="Server manager", bg="gray", padx=5, pady=5)
         self.portLocName = Label(self.frame, text="Localizer port:", bg="gray")
         self.portWebName = Label(self.frame, text="Visualizer port:", bg="gray")
-        #self.portLocButton = Button(self.frame, text="Prisijungti!", bg="gray", command=self.button_mode_loc)
+        self.portLocButton = Button(self.frame, text="Prisijungti!", bg="gray", command=self.button_mode_loc)
         self.portWebButton = Button(self.frame, text="Prisijungti!", bg="gray", command=self.button_mode_web)
         self.locPortEntry = Entry(self.frame)
         self.webPortEntry = Entry(self.frame)
@@ -406,11 +406,11 @@ class ControlsGUI():
         self.locPortEntry.grid(row=0, column=1)
         self.webPortEntry.grid(row=1, column=1)
 
-        #self.portLocButton.grid(row=0, column=2, padx=5, pady=5)
+        self.portLocButton.grid(row=0, column=2, padx=5, pady=5)
         self.portWebButton.grid(row=1, column=2, padx=5, pady=5)
 
         self.webThread = threading.Thread(target=self.SendWebSerialData, name="Web", daemon=True)
-        #self.locThread = threading.Thread(target=self.SendLocSerialData, name="Localizer", daemon=True)
+        self.locThread = threading.Thread(target=self.SendLocSerialData, name="Localizer", daemon=True)
 
         self.webThreading = False
         
@@ -448,60 +448,60 @@ class ControlsGUI():
             else:
                 print("Empty field")
 
-    # def button_mode_loc(self):
+    def button_mode_loc(self):
 
         
         
-    #     if self.is_loc_on:
-    #         print("OFF")
-    #         try:
-    #             self.serial.loc_sock.close()
-    #             self.portLocButton["text"] = "Prisijungti!"
-    #             self.is_loc_on = False
-    #             self.localizerThreading = False
-    #         except Exception as e:
-    #             messagebox.showerror("Klaida išjungiant thread!", e)
-    #     else:
-    #         self.locPortEntered = self.locPortEntry.get()
-    #         if self.locPortEntered:
-    #             if self.locPortEntered.isdigit():
-    #                 try:
-    #                     self.serial.loc_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    #                     self.serial.loc_sock.connect((self.serial.host, int(self.locPortEntry.get())))
-    #                     self.portLocButton["text"] = "Atsijungti!"
-    #                     self.is_loc_on = True
-    #                     self.localizerThreading = True
-    #                     if not self.locThread.is_alive():
-    #                         self.locThread.start()
+        if self.is_loc_on:
+            print("OFF")
+            try:
+                self.serial.loc_sock.close()
+                self.portLocButton["text"] = "Prisijungti!"
+                self.is_loc_on = False
+                self.localizerThreading = False
+            except Exception as e:
+                messagebox.showerror("Klaida išjungiant thread!", e)
+        else:
+            self.locPortEntered = self.locPortEntry.get()
+            if self.locPortEntered:
+                if self.locPortEntered.isdigit():
+                    try:
+                        self.serial.loc_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                        self.serial.loc_sock.connect((self.serial.host, int(self.locPortEntry.get())))
+                        self.portLocButton["text"] = "Atsijungti!"
+                        self.is_loc_on = True
+                        self.localizerThreading = True
+                        if not self.locThread.is_alive():
+                            self.locThread.start()
                         
-    #                 except Exception as e:
-    #                     messagebox.showerror("Klaida paleidžiant thread!", e)
-    #             else:
-    #                 print("NAN")
-    #         else:
-    #             print("Empty field")
+                    except Exception as e:
+                        messagebox.showerror("Klaida paleidžiant thread!", e)
+                else:
+                    print("NAN")
+            else:
+                print("Empty field")
 
-    # def SendLocSerialData(self):
-    #     while self.localizerThreading:
-    #         sleep(0.01)
-    #         try:
-    #             if self.data.data_ok:
-    #                 self.rotation = f"({self.data.parsedMsg[3]},{self.data.parsedMsg[4]},{self.data.parsedMsg[5]},{self.data.parsedMsg[1]},{self.data.parsedMsg[2]},{self.data.parsedMsg[9]})"
-    #                 self.serial.loc_sock.sendall(self.rotation.encode("utf-8"))
-    #                 response = self.serial.loc_sock.recv(1024).decode("utf-8")
-    #                 print(response)
-    #                 print(self.rotation)
+    def SendLocSerialData(self):
+        while self.localizerThreading:
+            sleep(0.01)
+            try:
+                if self.data.data_ok:
+                    self.rotation = f"({self.data.parsedMsg[2]},{self.data.parsedMsg[3]},{self.data.parsedMsg[4]},{self.data.parsedMsg[0]},{self.data.parsedMsg[1]},{self.data.parsedMsg[8]})"
+                    self.serial.loc_sock.sendall(self.rotation.encode("utf-8"))
+                    response = self.serial.loc_sock.recv(1024).decode("utf-8")
+                    print(response)
+                    print(self.rotation)
 
-    #         except Exception as e:
-    #             try: 
-    #                 self.serial.loc_sock.close()
-    #             except Exception as x:
-    #                 messagebox.showerror("Klaida!", x)
+            except Exception as e:
+                try: 
+                    self.serial.loc_sock.close()
+                except Exception as x:
+                    messagebox.showerror("Klaida!", x)
                     
-    #             messagebox.showerror("Klaida!", e)
-    #             self.localizerThreading = False
-    #             self.is_loc_on = False
-    #             self.portLocButton["text"] = "Prisijungti!"
+                messagebox.showerror("Klaida!", e)
+                self.localizerThreading = False
+                self.is_loc_on = False
+                self.portLocButton["text"] = "Prisijungti!"
 
     def SendWebSerialData(self):
         print("Aha")
@@ -510,7 +510,7 @@ class ControlsGUI():
             
             if self.data.data_ok:
                 print("sending Hello")
-                self.fullMsg = f"({self.data.parsedMsg[6]},{self.data.parsedMsg[7]})"
+                self.fullMsg = f"({self.data.parsedMsg[5]},{self.data.parsedMsg[7]},{self.data.parsedMsg[6]},{self.data.parsedMsg[10]},{self.data.parsedMsg[11]},{self.data.parsedMsg[12]},{self.data.parsedMsg[13]},{self.data.parsedMsg[14]},{self.data.parsedMsg[3]})"
                 # f("{self.data.parsedMsg[6]}")
                 try:
                     self.serial.web_sock.sendall(self.fullMsg.encode("utf-8"))

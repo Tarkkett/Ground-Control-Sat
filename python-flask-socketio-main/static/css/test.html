@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CSS Grid Example</title>
+<style>
+    html, body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+    }
+
+    .container {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        grid-template-rows: repeat(3, 1fr);
+        gap: 10px; /* Adjust gap between items */
+        height: 100vh;
+    }
+
+    .hero {
+        text-align: center;
+        border: 1px solid #000; /* Optional: Add border for better visualization */
+        padding: 10px; /* Optional: Add padding for better spacing */
+    }
+
+    .chart-container {
+        margin-top: 20px; /* Adjust margin as needed */
+    }
+
+    /* Additional styling */
+    .chart-container canvas {
+        border: 1px solid #000;
+    }
+</style>
+</head>
+<body>
+    <div class="container">
+        <!-- Repeat .hero divs 9 times -->
+        <div class="hero">
+            <h1>Servo Y pozicijos grafikas</h1>
+            <div class="chart-container">
+                <canvas id="myServoYChart" width="1000" height="600"></canvas>
+            </div>
+        </div>
+        <div class="hero">
+            <h1>Servo Y pozicijos grafikas</h1>
+            <div class="chart-container">
+                <canvas id="myServoYChart" width="1000" height="600"></canvas>
+            </div>
+        </div>
+        <div class="hero">
+            <h1>Servo Y pozicijos grafikas</h1>
+            <div class="chart-container">
+                <canvas id="myServoYChart" width="1000" height="600"></canvas>
+            </div>
+        </div>
+        <div class="hero">
+            <h1>Servo Y pozicijos grafikas</h1>
+            <div class="chart-container">
+                <canvas id="myServoYChart" width="1000" height="600"></canvas>
+            </div>
+        </div>
+        <div class="hero">
+            <h1>Servo Y pozicijos grafikas</h1>
+            <div class="chart-container">
+                <canvas id="myServoYChart" width="1000" height="600"></canvas>
+            </div>
+        </div>
+        <div class="hero">
+            <h1>Servo Y pozicijos grafikas</h1>
+            <div class="chart-container">
+                <canvas id="myServoYChart" width="1000" height="600"></canvas>
+            </div>
+        </div>
+        <div class="hero">
+            <h1>Servo Y pozicijos grafikas</h1>
+            <div class="chart-container">
+                <canvas id="myServoYChart" width="1000" height="600"></canvas>
+            </div>
+        </div>
+        <div class="hero">
+            <h1>Servo Y pozicijos grafikas</h1>
+            <div class="chart-container">
+                <canvas id="myServoYChart" width="1000" height="600"></canvas>
+            </div>
+        </div>
+        <div class="hero">
+            <h1>Servo Y pozicijos grafikas</h1>
+            <div class="chart-container">
+                <canvas id="myServoYChart" width="1000" height="600"></canvas>
+            </div>
+        </div>
+        <!-- Repeat this pattern for a total of 9 times -->
+        <!-- You can replace the content inside .hero divs as needed -->
+        <!-- For this example, the content is duplicated for demonstration purposes -->
+    </div>
+</body>
+</html>

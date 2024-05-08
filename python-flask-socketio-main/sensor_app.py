@@ -66,6 +66,13 @@ def background_thread():
             print(message_array)
             socketio.emit('updateTempSensorData', {'value': message_array[0], "date": get_current_datetime()})
             socketio.emit('updatePressureSensorData', {'value': message_array[1], "date": get_current_datetime()})
+            socketio.emit('updateHumiditySensorData', {'value': message_array[2], "date": get_current_datetime()})
+            socketio.emit('updateUVASensorData', {'value': message_array[3], "date": get_current_datetime()})
+            socketio.emit('updateUVBSensorData', {'value': message_array[4], "date": get_current_datetime()})
+            socketio.emit('updateUVCSensorData', {'value': message_array[5], "date": get_current_datetime()})
+            socketio.emit('updateAirQualSensorData', {'value': message_array[6], "date": get_current_datetime()})
+            socketio.emit('updateServoXSensorData', {'value': message_array[7], "date": get_current_datetime()})
+            socketio.emit('updateServoYSensorData', {'value': message_array[8], "date": get_current_datetime()})
 
 
 
