@@ -428,7 +428,7 @@ class ControlsGUI():
                 self.serial.web_sock.close()
                 self.portWebButton["text"] = "Prisijungti!"
                 self.is_web_on = False
-                #self.webThreading = False
+                self.webThreading = False
             except Exception as e:
                 messagebox.showerror("Klaida išjungiant thread!", e)
         else:
@@ -508,13 +508,12 @@ class ControlsGUI():
                 self.portLocButton["text"] = "Prisijungti!"
 
     def SendWebSerialData(self):
-        print("Aha")
         while self.webThreading == True:
             sleep(1)
             
             if self.data.data_ok:
-                print("sending Hello")
-                self.fullMsg = f"({self.data.parsedMsg[5]},{self.data.parsedMsg[7]},{self.data.parsedMsg[6]},{self.data.parsedMsg[10]},{self.data.parsedMsg[11]},{self.data.parsedMsg[12]},{self.data.parsedMsg[13]},{self.data.parsedMsg[14]},{self.data.parsedMsg[3]})"
+                print("sending Hello") #Temp, pressure, humidity, servo x, servo y, v speed, altitude, g, uvb
+                self.fullMsg = f"({self.data.parsedMsg[5]},{self.data.parsedMsg[7]},{self.data.parsedMsg[6]},{self.data.parsedMsg[10]},{self.data.parsedMsg[11]},{self.data.parsedMsg[12]},{self.data.parsedMsg[9]},{self.data.parsedMsg[14]},{self.data.parsedMsg[13]})"
                 # f("{self.data.parsedMsg[6]}")
                 try:
                     self.serial.web_sock.sendall(self.fullMsg.encode("utf-8"))

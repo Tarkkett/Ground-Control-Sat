@@ -64,15 +64,16 @@ def background_thread():
 
             message_array = list(parsed_message)
             print(message_array)
+            #Temp,                       pressure,                  humidity,                   servo x,                servo y,                v vel,                    altitude,                   g,                          UVB
+            #{self.data.parsedMsg[5]},{self.data.parsedMsg[7]},{self.data.parsedMsg[6]},{self.data.parsedMsg[10]},{self.data.parsedMsg[11]},{self.data.parsedMsg[12]},{self.data.parsedMsg[9]},{self.data.parsedMsg[14]},{self.data.parsedMsg[13]}
             socketio.emit('updateTempSensorData', {'value': message_array[0], "date": get_current_datetime()})
             socketio.emit('updatePressureSensorData', {'value': message_array[1], "date": get_current_datetime()})
             socketio.emit('updateHumiditySensorData', {'value': message_array[2], "date": get_current_datetime()})
-            socketio.emit('updateUVASensorData', {'value': message_array[3], "date": get_current_datetime()})
-            socketio.emit('updateUVBSensorData', {'value': message_array[4], "date": get_current_datetime()})
-            socketio.emit('updateUVCSensorData', {'value': message_array[5], "date": get_current_datetime()})
-            socketio.emit('updateAirQualSensorData', {'value': message_array[6], "date": get_current_datetime()})
-            socketio.emit('updateServoXSensorData', {'value': message_array[7], "date": get_current_datetime()})
-            socketio.emit('updateServoYSensorData', {'value': message_array[8], "date": get_current_datetime()})
+            socketio.emit('updateServoSensorData', {'valuex': message_array[3], 'valuey': message_array[4], "date": get_current_datetime()})
+            socketio.emit('updateVerticalVelSensorData', {'value': message_array[5], "date": get_current_datetime()})
+            socketio.emit('updateAltitudeSensorData', {'value': message_array[6], "date": get_current_datetime()})
+            socketio.emit('updateGravSensorData', {'value': message_array[7], "date": get_current_datetime()})
+            socketio.emit('updateUVBSensorData', {'value': message_array[8], "date": get_current_datetime()})
 
 
 

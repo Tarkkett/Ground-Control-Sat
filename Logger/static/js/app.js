@@ -2,12 +2,11 @@ $(document).ready(function () {
   const cttemp = document.getElementById("myTempChart").getContext("2d");
   const ctpressure = document.getElementById("myPressureChart").getContext("2d");
   const cthumid = document.getElementById("myHumidityChart").getContext("2d");
-  const ctuva = document.getElementById("myUVAChart").getContext("2d");
+  const ctverticalvel = document.getElementById("myVerticalVelChart").getContext("2d");
   const ctuvb = document.getElementById("myUVBChart").getContext("2d");
-  const ctuvc = document.getElementById("myUVCChart").getContext("2d");
-  const ctairqual = document.getElementById("myAirQualChart").getContext("2d");
-  const ctservox = document.getElementById("myServoXChart").getContext("2d");
-  const ctservoy = document.getElementById("myServoYChart").getContext("2d");
+  const ctgrav = document.getElementById("myGravChart").getContext("2d");
+  const ctalt = document.getElementById("myAltitudeChart").getContext("2d");
+  const ctservo = document.getElementById("myServoChart").getContext("2d");
 
   const myTempChart = new Chart(cttemp, {
     type: "line",
@@ -39,10 +38,10 @@ $(document).ready(function () {
       borderColor: ['rgba(46, 67, 120, 1)',],
     },
   });
-  const myUVAChart = new Chart(ctuva, {
+  const myServoChart = new Chart(ctservo, {
     type: "line",
     data: {
-      datasets: [{ label: "UVA",  }],
+      datasets: [{ label: "Servo X",  }, {label: "Servo Y", }],
     },
     options: {
       borderWidth: 3,
@@ -59,44 +58,34 @@ $(document).ready(function () {
       borderColor: ['rgba(122, 23, 94, 1)',],
     },
   });
-  const myUVCChart = new Chart(ctuvc, {
+  const myGravChart = new Chart(ctgrav, {
     type: "line",
     data: {
-      datasets: [{ label: "UVC",  }],
+      datasets: [{ label: "Gs pagreitis",  }],
     },
     options: {
       borderWidth: 3,
       borderColor: ['rgba(161, 22, 59, 1)',],
     },
   });
-  const myAirQualChart = new Chart(ctairqual, {
+  const myAltitudeChart = new Chart(ctalt, {
     type: "line",
     data: {
-      datasets: [{ label: "Oro kokybė",  }],
+      datasets: [{ label: "Aukštis",  }],
     },
     options: {
       borderWidth: 3,
       borderColor: ['rgba(186, 227, 23, 1)',],
     },
   });
-  const myServoXChart = new Chart(ctservox, {
+  const myVerticalVelChart = new Chart(ctverticalvel, {
     type: "line",
     data: {
-      datasets: [{ label: "X",  }],
+      datasets: [{ label: "Vertical Vel",  }],
     },
     options: {
       borderWidth: 3,
       borderColor: ['rgba(10, 38, 8, 1)',],
-    },
-  });
-  const myServoYChart = new Chart(ctservoy, {
-    type: "line",
-    data: {
-      datasets: [{ label: "Y",  }],
-    },
-    options: {
-      borderWidth: 3,
-      borderColor: ['rgba(209, 68, 29, 1)',],
     },
   });
 
@@ -121,12 +110,12 @@ $(document).ready(function () {
     });
     myHumidityChart.update();
   }
-  function addUVAData(label, data) {
-    myUVAChart.data.labels.push(label);
-    myUVAChart.data.datasets.forEach((dataset) => {
+  function addVerticalVelData(label, data) {
+    myVerticalVelChart.data.labels.push(label);
+    myVerticalVelChart.data.datasets.forEach((dataset) => {
       dataset.data.push(data);
     });
-    myUVAChart.update();
+    myVerticalVelChart.update();
   }
   function addUVBData(label, data) {
     myUVBChart.data.labels.push(label);
@@ -135,34 +124,27 @@ $(document).ready(function () {
     });
     myUVBChart.update();
   }
-  function addUVCData(label, data) {
-    myUVCChart.data.labels.push(label);
-    myUVCChart.data.datasets.forEach((dataset) => {
+  function addAltitudeData(label, data) {
+    myAltitudeChart.data.labels.push(label);
+    myAltitudeChart.data.datasets.forEach((dataset) => {
       dataset.data.push(data);
     });
-    myUVCChart.update();
+    myAltitudeChart.update();
   }
-  function addAirQualData(label, data) {
-    myAirQualChart.data.labels.push(label);
-    myAirQualChart.data.datasets.forEach((dataset) => {
+  function addGravData(label, data) {
+    myGravChart.data.labels.push(label);
+    myGravChart.data.datasets.forEach((dataset) => {
       dataset.data.push(data);
     });
-    myAirQualChart.update();
+    myGravChart.update();
   }
-  function addServoXData(label, data) {
-    myServoXChart.data.labels.push(label);
-    myServoXChart.data.datasets.forEach((dataset) => {
-      dataset.data.push(data);
-    });
-    myServoXChart.update();
+  function addServoData(label, datax, datay) {
+    myServoChart.data.labels.push(label);
+    myServoChart.data.datasets[0].data.push(datax)
+    myServoChart.data.datasets[1].data.push(datay)
+    myServoChart.update();
   }
-  function addServoYData(label, data) {
-    myServoYChart.data.labels.push(label);
-    myServoYChart.data.datasets.forEach((dataset) => {
-      dataset.data.push(data);
-    });
-    myServoYChart.update();
-  }
+
 
 
   const MAX_DATA_COUNT = 10;
@@ -186,34 +168,27 @@ $(document).ready(function () {
 
     addHumidityData(msg.date, msg.value);
   });
-  socket.on("updateUVASensorData", function (msg) {
-    console.log("Received presure sensorData :: " + msg.date + " :: " + msg.value);
-
-    addUVAData(msg.date, msg.value);
+  socket.on("updateServoSensorData", function (msg) {
+    addServoData(msg.date, msg.valuex, msg.valuey);
   });
   socket.on("updateUVBSensorData", function (msg) {
     console.log("Received presure sensorData :: " + msg.date + " :: " + msg.value);
 
     addUVBData(msg.date, msg.value);
   });
-  socket.on("updateUVCSensorData", function (msg) {
+  socket.on("updateAltitudeSensorData", function (msg) {
     console.log("Received presure sensorData :: " + msg.date + " :: " + msg.value);
 
-    addUVCData(msg.date, msg.value);
+    addAltitudeData(msg.date, msg.value);
   });
-  socket.on("updateAirQualSensorData", function (msg) {
+  socket.on("updateGravSensorData", function (msg) {
     console.log("Received presure sensorData :: " + msg.date + " :: " + msg.value);
 
-    addAirQualData(msg.date, msg.value);
+    addGravData(msg.date, msg.value);
   });
-  socket.on("updateServoXSensorData", function (msg) {
+  socket.on("updateVerticalVelSensorData", function (msg) {
     console.log("Received presure sensorData :: " + msg.date + " :: " + msg.value);
 
-    addServoXData(msg.date, msg.value);
-  });
-  socket.on("updateServoYSensorData", function (msg) {
-    console.log("Received presure sensorData :: " + msg.date + " :: " + msg.value);
-
-    addServoYData(msg.date, msg.value);
+    addVerticalVelData(msg.date, msg.value);
   });
 });

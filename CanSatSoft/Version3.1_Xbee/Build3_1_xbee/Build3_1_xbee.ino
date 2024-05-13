@@ -17,7 +17,7 @@
 #include <Adafruit_BME280.h>
 #include <AceRoutine.h>
 #include <SparkFun_AS7331.h>
-
+#include "Adafruit_SGP40.h"
 
 using namespace ace_routine;
 
@@ -29,8 +29,8 @@ Adafruit_Sensor *bme_humidity = bme.getHumiditySensor();
 float zeroPointAltitude = 0;
 float atmPressure = 1024;
 
-float verticalSpeed = 0;
-float horizontalSpeed = 0;
+//Air quality
+Adafruit_SGP40 sgp;
 
 //buzzer=pin=6
 #define buzzerPin 6 
@@ -90,6 +90,9 @@ void setReports(sh2_SensorId_t reportType, long report_interval) {
   if (! bno08x.enableReport(reportType, report_interval)) {
     Serial.println("Could not enable stabilized remote vector");
   }
+  if (!bno08x.enableReport(SH2_GRAVITY)) {
+    Serial.println("Could not enable gravity vector");
+  }
 }
 
 //NEO-8M=GPS=
@@ -125,8 +128,8 @@ struct SEND_DATA
   double longtitude;
   double latitude;
   float sat_cnt;
-  float seconds;
-  float minutes;
+  float x;
+  float y;
 
   float temperature;
   float pressure;
@@ -137,7 +140,13 @@ struct SEND_DATA
   float UVB;
   float UVC;
 
+  float verticalSpeed;
+  double horizontalSpeed;
+
   float gs;
+
+  float voc;
+  float sraw;
 
   float roll;
   float pitch;
@@ -166,10 +175,18 @@ void setup() {
     InitServos();
     InitBME();
     InitUV();
+    InitSGP();
     pinMode(buzzerPin, OUTPUT);
     delay(1000);
     Serial.println("Begin!");
 
+}
+
+void InitSGP(){
+  if (! sgp.begin()){
+    Serial.println("SGP40 sensor not found :(");
+    while (1);
+  }
 }
 
 void InitUV(){
@@ -341,6 +358,8 @@ float GetPitch(){
   }
 }
 
+float gravity = 0;
+
 float GetGs(){
   if (bno08x.wasReset()) {
     Serial.print("sensor was reset ");
@@ -349,18 +368,14 @@ float GetGs(){
   
   if (bno08x.getSensorEvent(&sensorValue)) {
     switch (sensorValue.sensorId) {
-      case SH2_ARVR_STABILIZED_RV:
-        quaternionToEulerRV(&sensorValue.un.arvrStabilizedRV, &ypr, true);
-        break;
-      case SH2_GYRO_INTEGRATED_RV:
-        quaternionToEulerGI(&sensorValue.un.gyroIntegratedRV, &ypr, true);
-        break;
+      case SH2_GRAVITY:
+        gravity = sensorValue.un.gravity.z;
     }
 
     // Serial.print(ypr.yaw);                Serial.print("\t");
     // Serial.print(ypr.pitch);              Serial.print("\t");
     // Serial.println(ypr.roll);
-    return sensorValue.un.gravity.z;
+    return gravity;
   }
 }
 
@@ -426,37 +441,35 @@ COROUTINE(transmit) {
     //Serial0.print("/");Serial0.print(gps.location.lat(), 6);Serial0.print("/");Serial0.print(gps.location.lng(), 6);Serial0.print("/X::");Serial0.print(MapToFloat(sin(radians(GetBearing(targetLat, targetLon, currentLat, currentLon)) + radians(GetYaw())), 1, -1, 0, 180));Serial0.print("/Y::");Serial0.println(MapToFloat(cos(radians(GetBearing(targetLat, targetLon, currentLat, currentLon)) + radians(GetYaw())), 1, -1, 0, 180));
     if(isSending){
       Serial0.print("#D#");
-      Serial0.print(FeedbackData.latitude, 6);
+      Serial0.print(FeedbackData.latitude, 6);// 0
       Serial0.print("#"); 
       Serial0.print(FeedbackData.longtitude, 6);
       Serial0.print("#"); 
       Serial0.print(FeedbackData.yaw);
       Serial0.print("#"); 
-      Serial0.print(FeedbackData.pitch);
+      Serial0.print(FeedbackData.pitch); //3
       Serial0.print("#"); 
       Serial0.print(FeedbackData.roll);
       Serial0.print("#");
-      Serial0.print(FeedbackData.temperature);
+      Serial0.print(FeedbackData.temperature); //5
       Serial0.print("#"); 
-      Serial0.print(FeedbackData.humidity);
+      Serial0.print(FeedbackData.humidity); //6
       Serial0.print("#"); 
-      Serial0.print(FeedbackData.pressure);
+      Serial0.print(FeedbackData.pressure); //7
       Serial0.print("#"); 
       Serial0.print(FeedbackData.altitude);
       Serial0.print("#"); 
       Serial0.print(FeedbackData.altitude - zeroPointAltitude);
       Serial0.print("#");
-      Serial0.print(FeedbackData.UVA); 
+      Serial0.print(FeedbackData.x); //10
       Serial0.print("#");
-      Serial0.print(FeedbackData.UVB);
+      Serial0.print(FeedbackData.y); //11
       Serial0.print("#");
-      Serial0.print(FeedbackData.UVC); 
-      Serial0.print("#");
-      Serial0.print(verticalSpeed); 
+      Serial0.print(FeedbackData.verticalSpeed, 2); //12
       Serial0.print("#"); 
-      Serial0.print(horizontalSpeed); 
+      Serial0.print(FeedbackData.UVB); //13
       Serial0.print("#");
-      Serial0.print(FeedbackData.gs); 
+      Serial0.print(FeedbackData.gs); //14
       Serial0.print("#");
       Serial0.print("10.0"); 
       Serial0.println("#");
@@ -512,33 +525,48 @@ COROUTINE(getBMEReadings){
 
 COROUTINE(logToSD){
   COROUTINE_LOOP(){
-    Serial2.print("#D#");
-    Serial2.print(FeedbackData.UVA); 
-    Serial2.print("#"); 
-    Serial2.print(FeedbackData.latitude, 6); 
-    Serial2.print("#"); 
-    Serial2.print(FeedbackData.longtitude, 6); 
-    Serial2.print("#"); 
-    Serial2.print(FeedbackData.yaw);
-    Serial2.print("#"); 
-    Serial2.print(FeedbackData.pitch);
-    Serial2.print("#"); 
-    Serial2.print(FeedbackData.roll);
-    Serial2.print("#");
-    Serial2.print(FeedbackData.temperature);
-    Serial2.print("#");
-    Serial2.print(FeedbackData.humidity);
-    Serial2.print("#"); 
-    Serial2.print(FeedbackData.pressure); 
-    Serial2.print("#"); 
-    Serial2.print(horizontalSpeed); 
-    Serial2.print("#"); 
-    Serial2.print(verticalSpeed); 
-    Serial2.print("#"); 
-    Serial2.print("10.0"); 
-    Serial2.println("#");
-    Serial2.flush();
-    COROUTINE_DELAY(500);
+      Serial2.print("#");
+      Serial2.print(FeedbackData.latitude, 6);
+      Serial2.print("#"); 
+      Serial2.print(FeedbackData.longtitude, 6);
+      Serial2.print("#"); 
+      Serial2.print(FeedbackData.yaw);
+      Serial2.print("#"); 
+      Serial2.print(FeedbackData.pitch);
+      Serial2.print("#"); 
+      Serial2.print(FeedbackData.roll);
+      Serial2.print("#");
+      Serial2.print(FeedbackData.temperature);
+      Serial2.print("#"); 
+      Serial2.print(FeedbackData.humidity);
+      Serial2.print("#"); 
+      Serial2.print(FeedbackData.pressure);
+      Serial2.print("#"); 
+      Serial2.print(FeedbackData.altitude);
+      Serial2.print("#"); 
+      Serial2.print(FeedbackData.altitude - zeroPointAltitude);
+      Serial2.print("#");
+      Serial2.print(FeedbackData.UVA); 
+      Serial2.print("#");
+      Serial2.print(FeedbackData.UVB);
+      Serial2.print("#");
+      Serial2.print(FeedbackData.UVC);
+      Serial2.print("#");
+      Serial2.print(FeedbackData.voc);
+      Serial2.print("#");
+      Serial2.print(FeedbackData.sraw);
+      Serial2.print("#");
+      Serial2.print(FeedbackData.verticalSpeed, 3); 
+      Serial2.print("#"); 
+      Serial2.print(FeedbackData.horizontalSpeed, 6); 
+      Serial2.print("#");
+      Serial2.print(FeedbackData.gs); 
+      Serial2.print("#");
+      Serial2.print(FeedbackData.voc);
+      Serial2.print("#");
+      Serial2.print(FeedbackData.voc);
+      Serial2.flush();
+    COROUTINE_DELAY(750);
   }
 }
 
@@ -581,7 +609,6 @@ COROUTINE(getSpeed){
 
   COROUTINE_LOOP() {
 
-    Serial.println("RESET");
     float errorV = 0;
     double errorH = 0;
     lastAltitude = FeedbackData.altitude;
@@ -593,14 +620,14 @@ COROUTINE(getSpeed){
 
     
 
-    COROUTINE_DELAY(8000);
+    COROUTINE_DELAY(1000);
 
 
     // x2 = radius * cos(lastLat) * cos(lastLon);
     // y2 = radius * cos(lastLat) * sin(lastLon);
 
-    // changeLat = x2 - x1;
-    // // changeLon = y2 - y1;
+    changeLat = FeedbackData.latitude - lastLat;
+    changeLon = FeedbackData.longtitude - lastLon;
 
     // errorH = std::sqrt(std::pow(changeLat, 2) + std::pow(changeLon, 2));
 
@@ -610,8 +637,8 @@ COROUTINE(getSpeed){
     // changeLon = FeedbackData.longtitude - lastLon;
     // Serial.println(changeLat, 6);
     
-    // squaredChangeLat = changeLat * changeLat;
-    // squaredChangeLat = changeLat * changeLat;
+    squaredChangeLat = changeLat * changeLat;
+    squaredChangeLat = changeLat * changeLat;
     // Serial.print("Squared: "); Serial.println(squaredChangeLat, 13);
     // Serial.println(" ");
     errorH = calculateDistance(FeedbackData.latitude, FeedbackData.longtitude, lastLat, lastLon);
@@ -624,13 +651,12 @@ COROUTINE(getSpeed){
     // squaredChangeLat = changeLat * changeLat;
     // squaredChangeLon = changeLon * changeLon;
     // Serial.print("Powered: "); Serial.println(squaredChangeLat, 6);
-    // errorH = std::sqrt(squaredChangeLat + squaredChangeLon);
-    // errorV = FeedbackData.altitude - lastAltitude;
+    FeedbackData.horizontalSpeed = std::sqrt(squaredChangeLat + squaredChangeLon);
+    FeedbackData.verticalSpeed = FeedbackData.altitude - lastAltitude;
     // // Update vel
     // Serial.println(std::pow(FeedbackData.latitude - lastLat, 2), 6);
     // Serial.println(lastLat, 6);
     // Serial.println(FeedbackData.latitude, 6);
-    // verticalSpeed = errorV;
     // horizontalSpeed = std::abs(errorH);
     Serial.print("Finished: "); Serial.println(errorH, 12); Serial.print(" "); Serial.println(FeedbackData.latitude);
   }
@@ -641,6 +667,9 @@ COROUTINE(controlServos){
 
     if (controllerMode) {
       //Full manual
+      FeedbackData.x = MapToFloat(servoXYArr[0], -1, 1, 0, 180);
+      FeedbackData.y = MapToFloat(servoXYArr[1], -1, 1, 0, 180);
+
       servoX.write(MapToFloat(servoXYArr[0], -1, 1, 0, 180));
       servoY.write(MapToFloat(servoXYArr[1], -1, 1, 0, 180));
       Serial.println("Controller mode!!");
@@ -652,11 +681,21 @@ COROUTINE(controlServos){
       servoY.write(90);
       //Serial.println("GPS mode!!");
     }
-    
-          
-
-
     COROUTINE_DELAY(100);
+  }
+}
+
+COROUTINE(getAirQual){
+  COROUTINE_LOOP(){
+    uint16_t sraw;
+    int32_t voc_index;
+
+    sraw = sgp.measureRaw(FeedbackData.temperature, FeedbackData.humidity);
+    FeedbackData.sraw = sraw;
+
+    voc_index = sgp.measureVocIndex(FeedbackData.temperature, FeedbackData.humidity);
+    FeedbackData.voc = voc_index;
+    COROUTINE_DELAY(1000);
   }
 }
 
@@ -758,6 +797,7 @@ void loop() {
   getUV.runCoroutine();
   getGPS.runCoroutine();
   getSpeed.runCoroutine();
+  getAirQual.runCoroutine();
 
 }
 
