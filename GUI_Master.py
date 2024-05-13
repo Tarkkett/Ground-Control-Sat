@@ -490,7 +490,7 @@ class ControlsGUI():
             sleep(0.01)
             try:
                 if self.data.data_ok:
-                    self.rotation = f"({self.data.parsedMsg[2]},{self.data.parsedMsg[3]},{self.data.parsedMsg[4]},{self.data.parsedMsg[0]},{self.data.parsedMsg[1]},{self.data.parsedMsg[8]})"
+                    self.rotation = f"({self.data.parsedMsg[2]},{self.data.parsedMsg[3]},{self.data.parsedMsg[4]},{self.data.parsedMsg[0]},{self.data.parsedMsg[1]},{self.data.parsedMsg[8]}, {self.data.parsedMsg[12]})"
                     self.serial.loc_sock.sendall(self.rotation.encode("utf-8"))
                     response = self.serial.loc_sock.recv(1024).decode("utf-8")
                     print(response)

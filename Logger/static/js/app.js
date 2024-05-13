@@ -45,7 +45,7 @@ $(document).ready(function () {
     },
     options: {
       borderWidth: 3,
-      borderColor: ['rgba(87, 42, 120, 1)',],
+      borderColor: ['rgba(20, 42, 255, 1)', 'rgba(255, 20, 20, 1)'],
     },
   });
   const myUVBChart = new Chart(ctuvb, {

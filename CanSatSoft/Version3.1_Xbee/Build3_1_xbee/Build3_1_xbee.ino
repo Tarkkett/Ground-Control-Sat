@@ -457,7 +457,7 @@ COROUTINE(transmit) {
       Serial0.print("#"); 
       Serial0.print(FeedbackData.pressure); //7
       Serial0.print("#"); 
-      Serial0.print(FeedbackData.altitude);
+      Serial0.print(FeedbackData.altitude); //8
       Serial0.print("#"); 
       Serial0.print(FeedbackData.altitude - zeroPointAltitude);
       Serial0.print("#");
