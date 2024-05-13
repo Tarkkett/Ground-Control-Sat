@@ -137,6 +137,8 @@ struct SEND_DATA
   float UVB;
   float UVC;
 
+  float gs;
+
   float roll;
   float pitch;
   float yaw;
@@ -339,6 +341,29 @@ float GetPitch(){
   }
 }
 
+float GetGs(){
+  if (bno08x.wasReset()) {
+    Serial.print("sensor was reset ");
+    setReports(reportType, reportIntervalUs);
+  }
+  
+  if (bno08x.getSensorEvent(&sensorValue)) {
+    switch (sensorValue.sensorId) {
+      case SH2_ARVR_STABILIZED_RV:
+        quaternionToEulerRV(&sensorValue.un.arvrStabilizedRV, &ypr, true);
+        break;
+      case SH2_GYRO_INTEGRATED_RV:
+        quaternionToEulerGI(&sensorValue.un.gyroIntegratedRV, &ypr, true);
+        break;
+    }
+
+    // Serial.print(ypr.yaw);                Serial.print("\t");
+    // Serial.print(ypr.pitch);              Serial.print("\t");
+    // Serial.println(ypr.roll);
+    return sensorValue.un.gravity.z;
+  }
+}
+
 float GetRoll(){
   if (bno08x.wasReset()) {
     Serial.print("sensor was reset ");
@@ -430,7 +455,9 @@ COROUTINE(transmit) {
       Serial0.print(verticalSpeed); 
       Serial0.print("#"); 
       Serial0.print(horizontalSpeed); 
-      Serial0.print("#"); 
+      Serial0.print("#");
+      Serial0.print(FeedbackData.gs); 
+      Serial0.print("#");
       Serial0.print("10.0"); 
       Serial0.println("#");
       Serial0.flush();
@@ -463,6 +490,7 @@ COROUTINE(getIMUReadings){
     FeedbackData.yaw = GetYaw();
     FeedbackData.pitch = GetPitch();
     FeedbackData.roll = GetRoll();
+    FeedbackData.gs = GetGs();
     COROUTINE_DELAY(400);
   }
 }

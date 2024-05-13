@@ -12,11 +12,17 @@ class SerialCtrl():
         self.host = "127.0.0.1"
         self.port = 25001
 
+        self.file = None
+
         self.loc_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.web_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         self.baseFilename = "Log/DataLog_0.txt"
-        
+    
+    def close_file(self):
+        if self.file is not None:
+            self.file.close()
+            print("File closed")
 
     def generate_file(self):
         self.fileName = self.open_unique_file(self.baseFilename)

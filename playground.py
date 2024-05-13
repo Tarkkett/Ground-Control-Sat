@@ -1,31 +1,18 @@
-import socket
+from tkinter import *
 from time import sleep
 
-HOST = '127.0.0.1'  # Standard loopback interface address (localhost)
-PORT = 25001        # Port to listen on (non-privileged ports are > 1023)
+def show_values():
+    print (w1.get(), w2.get())
+    print("Hello")
 
-# Create a socket object
-with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
-    # Bind the socket to the address and port
-    server_socket.bind((HOST, PORT))
+master = Tk()
+w1 = Scale(master, from_=0, to=42)
+w1.set(19)
+w1.pack()
+w2 = Scale(master, from_=0, to=200, orient=HORIZONTAL)
+w2.set(23)
+w2.pack()
+Button(master, text='Show', command=show_values).pack()
+sleep(0.2)
 
-    # Listen for incoming connections
-    server_socket.listen()
-    print(f"Server is listening on {HOST}:{PORT}")
-
-    # Accept incoming connections
-    client_socket, client_address = server_socket.accept()
-    print(f"Connection from {client_address} has been established.")
-
-    # Receive and print data from client continuously
-    while True:
-        data = client_socket.recv(1024)
-        if not data:
-            print("no data")
-            sleep(1)
-            break
-            
-        print(f"Received data from client: {data.decode()}")
-
-    # Close the connection
-    client_socket.close()
+mainloop()

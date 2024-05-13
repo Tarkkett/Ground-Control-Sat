@@ -136,12 +136,13 @@ class ComGUI():
 
             self.map.threading = False
             self.logger.threading = False
-            self.serial.file.close()
+            self.serial.close_file()
             self.serial.SerialClose(self)
             self.logger.LoggerGUIClose()
             self.conn.ConnGUIClose()
             self.controller.GamepadGUIClose()
             self.map.MapGUIClose()
+            self.controls.ControlsGUIClose()
             
             
             self.data.ClearData()
@@ -169,7 +170,7 @@ class LoggerGUI():
         self.serial = serial
 
         self.frame = LabelFrame(root, text="Data Logger", padx=5, pady=5, bg="gray")
-        self.dataCanvas = Canvas(self.frame, width=600, height=265, background="black", highlightbackground="black")
+        self.dataCanvas = Canvas(self.frame, width=800, height=265, background="black", highlightbackground="black")
         self.vsb = Scrollbar(self.frame, orient='vertical', command=self.dataCanvas.yview)
 
         self.dataFrame = Frame(self.dataCanvas, bg="black", pady=5)
@@ -284,7 +285,6 @@ class MapGUI():
         for widget in self.frame.winfo_children():
             widget.destroy()
         self.frame.destroy()
-        self.root.geometry("360x120")
 
 
 class GamepadGUI():
@@ -376,7 +376,6 @@ class GamepadGUI():
         for widget in self.frame.winfo_children():
             widget.destroy()
         self.frame.destroy()
-        self.root.geometry("360x120")
 
 class ControlsGUI():
     def __init__(self, root, serial, data):
@@ -413,6 +412,11 @@ class ControlsGUI():
         self.locThread = threading.Thread(target=self.SendLocSerialData, name="Localizer", daemon=True)
 
         self.webThreading = False
+
+    def ControlsGUIClose(self):
+        for widget in self.frame.winfo_children():
+            widget.destroy()
+        self.frame.destroy()
         
 
 
@@ -612,7 +616,8 @@ class ConnGUI():
             self.threading = True
         else:
             self.threading = False
-            self.serial.file.close()
+            self.serial.close_file()
+
             print("Closed")
 
     def writeToFile(self):
